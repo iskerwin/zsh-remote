@@ -56,7 +56,8 @@ compdef _rmt_pick_complete telnet-pick
 compdef _rmt_cmp_help telnet-cfg
 compdef telnet-to=telnet
 
-_fzf_complete_telnet()         { _rmt_fzf_complete_open telnet "$@"; }
+_rmt_fzf_complete_telnet()     { _rmt_fzf_complete_open telnet "$@"; }
+_rmt_fzf_claim telnet
 _fzf_complete_telnet-to()      { _rmt_fzf_complete_open telnet "$@"; }
 _fzf_complete_telnet_post()    { _rmt_fzf_complete_post; }
 _fzf_complete_telnet-to_post() { _rmt_fzf_complete_post; }

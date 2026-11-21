@@ -61,12 +61,13 @@ compdef _rmt_cmp_help ssh-cfg
 compdef ssh-to=ssh
 
 # ssh \<Tab> keeps the arguments already typed: ssh -p 2222 \<Tab> → ssh-to -p 2222 <host>
-_fzf_complete_ssh() {
+_rmt_fzf_complete_ssh() {
     _rmt_fzf_complete ssh "$@" || return
     # Only a line that starts with ssh (not FOO=1 ssh, or leading spaces) is rewritten
     [[ $LBUFFER == ssh[[:space:]]* ]] && LBUFFER="ssh-to${LBUFFER#ssh}"
     return 0
 }
+_rmt_fzf_claim ssh
 _fzf_complete_ssh-to()      { _rmt_fzf_complete ssh "$@"; }
 _fzf_complete_ssh_post()    { _rmt_fzf_complete_post; }
 _fzf_complete_ssh-to_post() { _rmt_fzf_complete_post; }

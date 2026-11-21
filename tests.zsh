@@ -284,6 +284,13 @@ assert 'sftp-open \<Tab>: line becomes sftp-open <alias>' 'sftp-open web ' "$(ta
 assert 'ssh \<Tab>: keeps typed arguments, ssh becomes ssh-to' 'ssh-to -p 2222 web' "$(tab_run web _fzf_complete_ssh 'ssh -p 2222 ')"
 assert 'ssh-to \<Tab>: line kept' 'ssh-to web' "$(tab_run web _fzf_complete_ssh-to 'ssh-to ')"
 assert 'ssh \<Tab>: an assignment before ssh is not rewritten' 'FOO=1 ssh web' "$(tab_run web _fzf_complete_ssh 'FOO=1 ssh ')"
+# fzf --zsh loaded after the plugin redefines _fzf_complete_ssh / _telnet; the first prompt takes them back
+claimed=$(source $tmp/load.zsh
+    _fzf_complete_ssh() { print stub; }; _fzf_complete_telnet() { print stub; }
+    for f in $precmd_functions; do $f; done
+    print -r -- ${functions[_fzf_complete_ssh]:#*stub*}:${functions[_fzf_complete_telnet]:#*stub*}:${precmd_functions[(r)_rmt_fzf_reclaim]-})
+assert 'fzf loaded later: the first prompt installs the pickers and drops the hook' yes \
+    "$([[ $claimed == *'ssh-to'*:*_rmt_fzf_complete_open*: ]] && print yes)"
 assert '\<Tab>: nothing picked leaves the line' 'ftp ' "$(tab_run '' _fzf_complete_ftp 'ftp ')"
 help=$(source $tmp/load.zsh; ssh-to -h; telnet-to --help; sftp-open -h; ftp-open -h)
 assert 'open commands -h list their session commands' yes \

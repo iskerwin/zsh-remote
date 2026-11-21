@@ -163,6 +163,19 @@ _rmt_cmp_hosts() {
 # ══════════════════════════════════════════════
 # fzf completion (<command> \<Tab>)
 # ══════════════════════════════════════════════
+# _rmt_fzf_claim <command>: install _rmt_fzf_complete_<command> as _fzf_complete_<command>, now and
+# again before the first prompt. fzf's own completion (fzf --zsh) defines _fzf_complete_ssh and
+# _telnet too, and the last definition wins; this makes the pickers win in any load order.
+typeset -gaU _rmt_fzf_claimed
+_rmt_fzf_claim() {
+    local c
+    _rmt_fzf_claimed+=( "$@" )
+    for c in $_rmt_fzf_claimed; do functions[_fzf_complete_$c]=$functions[_rmt_fzf_complete_$c]; done
+}
+_rmt_fzf_reclaim() { _rmt_fzf_claim; add-zsh-hook -d precmd _rmt_fzf_reclaim; }
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _rmt_fzf_reclaim
+
 # _rmt_fzf_complete <kind> <args...>: the kind's picker as completion;
 # status 1 when nothing was picked
 _rmt_fzf_complete() {

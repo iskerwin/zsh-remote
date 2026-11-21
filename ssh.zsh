@@ -2,7 +2,7 @@
 # ssh.zsh — SSH hosts from ~/.ssh/config (+ Includes)
 #   ssh-pick [query]   fzf picker, Enter runs ssh-ct
 #   ssh-cfg            edit ~/.ssh/config
-#   ssh-ct <host> ...  ssh through ChromaTerm, plain ssh when ct is unusable
+#   ssh-ct <host> ...  ssh highlighted by tinge, plain ssh without it
 #   ssh \<Tab>, ssh-ct \<Tab>   the picker as fzf completion
 # ══════════════════════════════════════════════
 
@@ -38,12 +38,12 @@ ssh-pick() {
     _rmt_pick ssh "$@"
 }
 
-# @desc: SSH with ChromaTerm highlighting, falls back to plain ssh
+# @desc: SSH with tinge highlighting, falls back to plain ssh
 # @usage: ssh-ct <host> | ssh-ct user@ip -p port [ssh options...]
 ssh-ct() {
     [[ ${1-} == (-h|--help) ]] && { _rmt_help $0; _rmt_help_ssh; return 0; }
-    if _rmt_ct_usable ssh; then
-        command ct ssh "$@"
+    if _rmt_tinge; then
+        command tinge ssh "$@"
     else
         command ssh "$@"
     fi

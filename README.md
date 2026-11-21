@@ -7,7 +7,7 @@ Your SSH, SFTP, Telnet and FTP hosts in fzf pickers, read from ssh-config-style 
 | Command | What it does |
 |---|---|
 | `ssh-pick [query]` | Pick a host from `~/.ssh/config` (and its `Include`s), connect with `ssh-ct` |
-| `ssh-ct <alias> [ssh options]` | ssh through [ChromaTerm](https://github.com/hSaria/ChromaTerm) highlighting, plain ssh if it is missing |
+| `ssh-ct <alias> [ssh options]` | ssh highlighted by [tinge](https://github.com/iskerwin/tinge), plain ssh if it is missing |
 | `sftp-pick` · `sftp-open <alias>` | Browse an SSH host's files over SFTP in lftp; `--tui` opens two panes in mc |
 | `telnet-pick` · `telnet-ct <alias>` | Telnet devices from `~/.ssh/telnet_config` |
 | `ftp-pick` · `ftp-open <alias>` | FTP / FTPS servers from `~/.ssh/ftp_config`, password in the keychain |
@@ -25,7 +25,7 @@ zsh 5.8+ and OpenSSH. Everything else is optional, and a command that needs a mi
 | Tool | Used for | Without it |
 |---|---|---|
 | [fzf](https://github.com/junegunn/fzf) 0.58+ | the pickers | open hosts directly: `ssh-ct <alias>`, `ftp-open <alias>`, … |
-| [ChromaTerm](https://github.com/hSaria/ChromaTerm) (`ct`) | highlighting in `ssh-ct` / `telnet-ct` | plain ssh / telnet, with a one-time tip |
+| [tinge](https://github.com/iskerwin/tinge) | highlighting in `ssh-ct` / `telnet-ct` | plain ssh / telnet, with a one-time tip |
 | `lftp` | `sftp-open`, `ftp-open` | `sftp-open` uses sftp (one-time tip); `ftp-open` stops with the install command |
 | `mc` | two-pane browser (`^O`, `--tui`) | error with the install command |
 | `telnet` | `telnet-ct`, Telnet devices in `net-backup` | error with the install command (macOS no longer ships it) |

@@ -357,9 +357,9 @@ _rmt_help_mc() {
 # ── Helper tools ──────────────────────────────
 # Package per tool: Homebrew formula, then the Debian / Ubuntu / Fedora package.
 # A value with a space is a full install command for every platform.
-typeset -gA _rmt_pkg_brew=( fzf fzf lftp lftp mc midnight-commander expect expect telnet telnet nc netcat ct 'pipx install chromaterm' )
-typeset -gA _rmt_pkg_apt=( fzf fzf lftp lftp mc mc expect expect telnet telnet nc netcat-openbsd ct 'pipx install chromaterm' secret-tool libsecret-tools )
-typeset -gA _rmt_pkg_dnf=( fzf fzf lftp lftp mc mc expect expect telnet telnet nc nmap-ncat ct 'pipx install chromaterm' secret-tool libsecret )
+typeset -gA _rmt_pkg_brew=( fzf fzf lftp lftp mc midnight-commander expect expect telnet telnet nc netcat tinge 'brew install iskerwin/tap/tinge' )
+typeset -gA _rmt_pkg_apt=( fzf fzf lftp lftp mc mc expect expect telnet telnet nc netcat-openbsd tinge 'brew install iskerwin/tap/tinge' secret-tool libsecret-tools )
+typeset -gA _rmt_pkg_dnf=( fzf fzf lftp lftp mc mc expect expect telnet telnet nc nmap-ncat tinge 'brew install iskerwin/tap/tinge' secret-tool libsecret )
 
 # _rmt_install_cmd <tool>: how to install it here -> REPLY
 _rmt_install_cmd() {

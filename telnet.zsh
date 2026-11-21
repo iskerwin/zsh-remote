@@ -3,7 +3,7 @@
 # never Included, so ssh doesn't see them)
 #   telnet-pick [query]   fzf picker, Enter runs telnet-ct
 #   telnet-cfg            edit ~/.ssh/telnet_config
-#   telnet-ct <alias> | <host> [port]   telnet through ChromaTerm
+#   telnet-ct <alias> | <host> [port]   telnet highlighted by tinge
 #   telnet \<Tab>, telnet-ct \<Tab>     the picker as fzf completion
 # ══════════════════════════════════════════════
 
@@ -28,7 +28,7 @@ telnet-pick() {
     _rmt_pick telnet "$@"
 }
 
-# @desc: Telnet with ChromaTerm highlighting, falls back to plain telnet; accepts aliases from ~/.ssh/telnet_config
+# @desc: Telnet with tinge highlighting, falls back to plain telnet; accepts aliases from ~/.ssh/telnet_config
 # @usage: telnet-ct <host> [port] | telnet-ct <alias>
 telnet-ct() {
     [[ ${1-} == (-h|--help) ]] && { _rmt_help $0; _rmt_help_telnet; return 0; }
@@ -38,8 +38,8 @@ telnet-ct() {
         set -- "$_rmt_g[hostname]" "$_rmt_g[port]"
     fi
     _rmt_need telnet telnet-ct || return 1
-    if _rmt_ct_usable telnet; then
-        command ct telnet "$@"
+    if _rmt_tinge; then
+        command tinge telnet "$@"
     else
         command telnet "$@"
     fi

@@ -55,10 +55,7 @@ _rmt_help() {
     print -r -- "  ${_ui[grn]}${usage%% *}${_ui[r]}${_ui[cyn]}${usage#${usage%% *}}${_ui[r]}"
 }
 
-# Whether ChromaTerm (ct) is installed and actually runs; if not, warn once and let the caller fall back
-_rmt_ct_usable() {
-    (( $+commands[ct] )) || { _rmt_tip ct 'highlighting'; return 1; }
-    ( command ct --version ) &>/dev/null && return 0
-    _ui_warn "ChromaTerm is installed but does not run, falling back to plain $1"
-    return 1
+# Whether tinge is installed for highlighting; if not, tip once and let the caller fall back
+_rmt_tinge() {
+    (( $+commands[tinge] )) || { _rmt_tip tinge 'highlighting'; return 1; }
 }

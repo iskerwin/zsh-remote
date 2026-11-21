@@ -23,7 +23,7 @@ remote-doctor() {
     fi
     _ui_sect optional 'only the commands listed need them'
     for t what in \
-        ct 'ChromaTerm highlighting in ssh-ct / telnet-ct' \
+        tinge 'highlighting in ssh-ct / telnet-ct' \
         lftp 'sftp-open (falls back to sftp); ftp-open needs it' \
         mc 'two-pane browser: ^O, --tui' \
         telnet 'telnet-ct and telnet devices in net-backup' \

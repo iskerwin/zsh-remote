@@ -59,7 +59,18 @@ git clone https://github.com/iskerwin/zsh-remote ~/.local/share/zsh-remote
 echo 'source ~/.local/share/zsh-remote/zsh-remote.plugin.zsh' >> ~/.zshrc
 ```
 
-Load it after `compinit`; the commands register their completions.
+### Load order
+
+Load it after `compinit`: the commands register their completions with `compdef`. zsh-ui can load before or after it. With the other tools:
+
+```zsh
+plug "iskerwin/zsh-ui"                      # 1. anywhere; first is simplest
+plug "zap-zsh/supercharge"                  # 2. compinit (or your own compinit call)
+plug "iskerwin/zsh-remote"                  # 3. after compinit
+CF_PATHS=( ~/.zshrc ~/.config/zsh ${ZSH_REMOTE_DIR-} )
+plug "iskerwin/command-finder"              # 4. after zsh-remote, so CF_PATHS can list its commands
+plug "zsh-users/zsh-syntax-highlighting"    # 5. widget-wrapping plugins last
+```
 
 ## Host files
 

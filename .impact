@@ -1,0 +1,13 @@
+# 影响清单：改了左边的文件，右边的通常也要一起更新。impact-check 读它（提交时、agent 收尾时），
+# impact-check 由 dotfiles 安装。格式见 `impact-check -h`；漏了的关联直接加一行，改完跑 impact-check --lint。
+
+!(tests|tests-lib|ui-fallback|lib).zsh -> tests.zsh | 新行为要有测试
+lib.zsh -> tests-lib.zsh
+@(ssh|sftp|telnet|ftp|agent|netbak|doctor).zsh -> README.md | 命令表、-h 帮助
+picker.zsh -> README.md#Host files | 选择器和 \<Tab> 补全
+util.zsh -> README.md#Requirements | tinge 最低版本
+lib.zsh -> README.md#Configuration | REMOTE_* 变量
+lib.zsh -> ~/Developer/tinge/internal/rules/network.yml | _rmt_device_pat 的设备词和 match 一致
+net-backup.exp -> README.md#net-backup
+.github/workflows/* -> README.md#Development
+README.md -> AGENTS.md | 测试、发布方法两边一致

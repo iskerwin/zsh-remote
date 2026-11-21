@@ -28,6 +28,8 @@ zsh-remote 是 zsh 插件（远端 `iskerwin/zsh-remote`）：ssh / sftp / telne
 
 同一个 commit 里 MUST 同步更新：README 的命令表、「Requirements」、「Configuration」、「Host files」；命令的 `-h` 帮助；`zsh-remote.plugin.zsh` 开头的文件表。改名的命令 MUST 搜索全仓库和 dotfiles 里的引用（缩写、README、AGENTS.md）。
 
+改了什么要一起看哪些文件，写在 `.impact`（格式见 `impact-check -h`，`impact-check` 由 dotfiles 安装）。结束前和提交时会自动列出漏掉的项（Stop hook、`.githooks/commit-msg`；clone 后执行一次 `git config core.hooksPath .githooks`），MUST 逐项更新，确实不需要时说明原因，提交时写 `Docs-checked: <原因>`。发现漏掉的关联 MUST 补进 `.impact` 并跑 `impact-check --lint`。
+
 ## 发布
 
 1. 提交推送到 `main`，打 tag：`git tag -a vX.Y.Z -m "zsh-remote X.Y.Z" && git push origin vX.Y.Z`。改名、删除命令或提高依赖版本升第二位，其余升第三位。

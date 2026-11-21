@@ -308,4 +308,25 @@ mkdir -p $tmp/fake-ui
 print -r -- '_ui_err() { print fake-zsh-ui; }' > $tmp/fake-ui/ui.zsh
 assert 'helper uses ZSH_UI_DIR' fake-zsh-ui "$(ZSH_UI_DIR=$tmp/fake-ui zsh -f -c 'source $1/lib.zsh; _ui_err' _ $here)"
 assert 'helper falls back without ZSH_UI_DIR' ui-fallback.zsh "$(env -u ZSH_UI_DIR zsh -f -c 'source $1/lib.zsh; print -r -- ${functions_source[_ui_err]:t}' _ $here)"
+
+# Helper tools: install commands per platform, required -> error, optional -> one tip per shell
+mkdir -p $tmp/pm/brew $tmp/pm/apt $tmp/pm/none
+for d in brew apt; do print '#!/bin/sh' > $tmp/pm/$d/${d/apt/apt-get}; chmod +x $tmp/pm/$d/${d/apt/apt-get}; done
+inst() { PATH=$tmp/pm/$1 $commands[zsh] -f -c 'source $1/lib.zsh; _rmt_install_cmd $2; print -r -- $REPLY' _ $here $2; }
+assert 'install: brew formula' 'brew install midnight-commander' "$(inst brew mc)"
+assert 'install: apt package' 'sudo apt install netcat-openbsd' "$(inst apt nc)"
+assert 'install: full command anywhere' 'pipx install chromaterm' "$(inst apt ct)"
+assert 'install: Linux-only tool without apt' 'install secret-tool with your package manager' "$(inst brew secret-tool)"
+assert '_rmt_need: error names the caller and the command' '✗ telnet-ct needs telnet — sudo apt install telnet' \
+    "$(env -u ZSH_UI_DIR PATH=$tmp/pm/apt $commands[zsh] -f -c 'source $1/lib.zsh; _rmt_need telnet telnet-ct' _ $here 2>&1)"
+assert '_rmt_tip: once per shell' 1 \
+    "$(env -u ZSH_UI_DIR PATH=$tmp/pm/brew $commands[zsh] -f -c 'source $1/lib.zsh; _rmt_tip ct x; _rmt_tip ct x' _ $here 2>&1 | command grep -c Tip)"
+assert '_rmt_tip: REMOTE_TIPS=0 is silent' '' \
+    "$(env -u ZSH_UI_DIR REMOTE_TIPS=0 zsh -f -c 'source $1/lib.zsh; _rmt_tip ct x' _ $here 2>&1)"
+rc=0; env -u ZSH_UI_DIR PATH=$tmp/pm/none HOME=$tmp $commands[zsh] -f -c 'compdef() { :; }; ssh-add() { return 1; }; source $1/zsh-remote.plugin.zsh; remote-doctor' _ $here >/dev/null 2>&1 || rc=$?
+assert 'remote-doctor: fails when a required tool is missing' 1 $rc
+# ^T for Telnet / FTP without nc: zsh's ztcp
+mkdir -p $tmp/nonc; for c in zsh perl ssh cat awk grep sed tr cut sort head tail mktemp rm; do ln -s ${commands[$c]} $tmp/nonc/$c; done
+print -rl -- 'Host shut' '  HostName 127.0.0.1' '  Port 9' > $tmp/probe_cfg
+assert 'probe without nc: closed port' 1 "$(env -u ZSH_UI_DIR PATH=$tmp/nonc REMOTE_TELNET_CONFIG=$tmp/probe_cfg $commands[zsh] -f $here/helper probe telnet shut 2>&1 | command grep -c 'Port 9 closed')"
 print -r -- "$passed passed"

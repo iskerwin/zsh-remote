@@ -55,9 +55,9 @@ ftp-open() {
         return 0
     fi
     if [[ $mode == tui ]]; then
-        _rmt_need mc 'ftp-open --tui' midnight-commander || return 1
+        _rmt_need mc 'ftp-open --tui' || return 1
     else
-        _rmt_need lftp ftp-open lftp || return 1
+        _rmt_need lftp ftp-open || return 1
     fi
     if ! _rmt_proto "$name" ftp; then
         _ui_err "$name is not in ${(D)REMOTE_FTP_CONFIG} (ftp-cfg adds it)"

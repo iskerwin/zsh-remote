@@ -276,15 +276,24 @@ cmd_probe_tcp() {
     _ui_hint "$proto · TCP port check · never sends passwords"
     print
 
-    if ! out=$(nc -zv -G $t "$host" "$port" 2>&1); then
-        _rmt_err "${${${(f)out}[-1]##*: }:-Port $port closed or unreachable}"
+    # nc -w is the connect timeout in both BSD (macOS) and OpenBSD (Linux) netcat; without nc,
+    # zsh's own ztcp under a timeout (no address in its output, so no fake-IP hint)
+    if (( $+commands[nc] )); then
+        if ! out=$(_rmt_timeout $(( t + 2 )) nc -zv -w $t "$host" "$port" 2>&1); then
+            local -a lines=( ${(f)out} )
+            _rmt_err "${${lines[-1]##*: }:-Port $port closed or unreachable}"
+            return
+        fi
+    elif ! _rmt_timeout $(( t + 1 )) zsh -fc 'zmodload zsh/net/tcp && ztcp $1 $2' _ "$host" "$port" &>/dev/null; then
+        _rmt_err "Port $port closed or unreachable"
         return
     fi
     _rmt_ok "Reachable — $proto ${_ui[ylw]}$host:$port${_ui[r]} open"
     [[ $out =~ '\[(198\.1[89]\.[0-9.]+)\]' ]] &&
         _ui_hint "  $match[1] is a proxy fake-IP — open only means the proxy accepted the connection"
     # Telnet option negotiation bytes are non-printable and get stripped
-    banner=$( { sleep 2 } | _rmt_timeout $(( t + 3 )) nc -G $t -w $t "$host" "$port" 2>/dev/null | LC_ALL=C tr -cd '[:print:]\n' | grep -m1 '[^[:space:]]')
+    (( $+commands[nc] )) || return 0
+    banner=$( { sleep 2 } | _rmt_timeout $(( t + 3 )) nc -w $t "$host" "$port" 2>/dev/null | LC_ALL=C tr -cd '[:print:]\n' | grep -m1 '[^[:space:]]')
     [[ -n $banner ]] && _rmt_info "Banner: ${_ui[ylw]}${banner[1,60]}${_ui[r]}"
 }
 

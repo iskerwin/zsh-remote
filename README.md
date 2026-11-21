@@ -12,6 +12,7 @@ Your SSH, SFTP, Telnet and FTP hosts in fzf pickers, read from ssh-config-style 
 | `telnet-pick` · `telnet-ct <alias>` | Telnet devices from `~/.ssh/telnet_config` |
 | `ftp-pick` · `ftp-open <alias>` | FTP / FTPS servers from `~/.ssh/ftp_config`, password in the keychain |
 | `ssh-cfg` · `telnet-cfg` · `ftp-cfg` | Edit a host file (through `chezmoi edit --apply` when chezmoi manages it, else `$VISUAL` / `$EDITOR`); `^E` in a picker does the same |
+| `remote-doctor` | Which helper tools are installed, and how to install the missing ones |
 | `ssh-ag [status \| clear]` | Add and remove ssh-agent keys with fzf |
 | `net-backup [alias\|@group...]` | Back up switch, router and firewall configs (Ruijie, Cisco, Huawei, H3C) over SSH or Telnet |
 
@@ -19,9 +20,20 @@ Every command answers `-h`. In a picker: `↵` open, `^T` test the connection, `
 
 ## Requirements
 
-- zsh 5.8+, [fzf](https://github.com/junegunn/fzf) 0.61+ for the pickers (the open commands work without it)
-- Optional: `lftp` (SFTP / FTP), `mc` (two-pane `--tui`), ChromaTerm `ct` (highlighting), `expect` (`net-backup`), `secret-tool` on Linux (saved passwords)
-- A [Nerd Font](https://www.nerdfonts.com/) for the host icons
+zsh 5.8+ and OpenSSH. Everything else is optional, and a command that needs a missing tool says so with the install command for your system (Homebrew, apt or dnf):
+
+| Tool | Used for | Without it |
+|---|---|---|
+| [fzf](https://github.com/junegunn/fzf) 0.61+ | the pickers | open hosts directly: `ssh-ct <alias>`, `ftp-open <alias>`, … |
+| [ChromaTerm](https://github.com/hSaria/ChromaTerm) (`ct`) | highlighting in `ssh-ct` / `telnet-ct` | plain ssh / telnet, with a one-time tip |
+| `lftp` | `sftp-open`, `ftp-open` | `sftp-open` uses sftp (one-time tip); `ftp-open` stops with the install command |
+| `mc` | two-pane browser (`^O`, `--tui`) | error with the install command |
+| `telnet` | `telnet-ct`, Telnet devices in `net-backup` | error with the install command (macOS no longer ships it) |
+| `expect` | `net-backup` | error with the install command |
+| `nc` | `^T` banner for Telnet / FTP | the port check uses zsh's built-in TCP module |
+| `secret-tool` (Linux) | saved FTP / `net-backup` passwords | asked every time |
+
+Run `remote-doctor` to see which are installed and how to get the rest. Set `REMOTE_TIPS=0` to hide the one-time tips. A [Nerd Font](https://www.nerdfonts.com/) shows the host icons.
 
 Install [zsh-ui](https://github.com/iskerwin/zsh-ui) for the same btop-style look as your other tools; without it zsh-remote uses a plain built-in look.
 
@@ -85,6 +97,7 @@ Devices are the hosts whose alias or `#_Tags` contain ruijie, cisco, huawei, h3c
 | `REMOTE_PREVIEW_WIDTH` | `55` (% of the picker) |
 | `REMOTE_CLIP` | first of `clip-copy`, `pbcopy`, `wl-copy`, `xclip`, `xsel` |
 | `NET_BACKUP_DIR` | `~/Backups/network` |
+| `REMOTE_TIPS` | `1`; `0` hides the one-time tips about optional tools |
 
 ## Development
 

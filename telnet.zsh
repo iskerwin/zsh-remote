@@ -37,6 +37,7 @@ telnet-ct() {
         _rmt_resolve "$1" telnet || return 1
         set -- "$_rmt_g[hostname]" "$_rmt_g[port]"
     fi
+    _rmt_need telnet telnet-ct || return 1
     if _rmt_ct_usable telnet; then
         command ct telnet "$@"
     else

@@ -30,13 +30,14 @@ sftp-open() {
     [[ ${1-} == (-h|--help) ]] && { _rmt_help $0; _rmt_help_lftp; _rmt_help_mc; return 0; }
     if [[ ${1-} == --tui ]]; then
         (( $# == 2 )) || { _ui_usage sftp-open '--tui <alias>'; return 2; }
-        _rmt_need mc 'sftp-open --tui' midnight-commander || return 1
+        _rmt_need mc 'sftp-open --tui' || return 1
         mc -u "$PWD" "sh://$2"   # -u: no subshell (mc's zsh subshell can hang on a customised zshrc)
         return
     fi
     (( $# == 1 )) || { _ui_usage sftp-open '<alias> | --tui <alias>'; return 2; }
     local name=$1 t=$REMOTE_CONNECT_TIMEOUT err
     if (( ! $+commands[lftp] )); then
+        _rmt_tip lftp 'a friendlier file browser (mirror, parallel transfers)'
         sftp "$name"
         return
     fi

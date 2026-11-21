@@ -57,7 +57,7 @@ _ssha_ensure_agent() {
 # Key picker
 # ══════════════════════════════════════════════
 _ssha_picker() {
-    (( $+commands[fzf] )) || { _ui_err 'ssh-ag: fzf not found'; _ui_hint 'brew install fzf'; return 1; }
+    _rmt_need fzf ssh-ag || return 1
     local h=${(q)_RMT_HELPER} label
     _ui_fzf_label grn " $_rmt_i[key]  ssh-agent"; label=$REPLY
     local pkeys; _ui_fzf_keys cyn '^/' Hide; pkeys=$REPLY

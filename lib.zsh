@@ -355,11 +355,41 @@ _rmt_help_mc() {
     _ui_cmd 'F10' 'quit' 36
 }
 
-# _rmt_need <command> <caller> <brew formula>: installed, or an error with the install hint
+# ── Helper tools ──────────────────────────────
+# Package per tool: Homebrew formula, then the Debian / Ubuntu / Fedora package.
+# A value with a space is a full install command for every platform.
+typeset -gA _rmt_pkg_brew=( fzf fzf lftp lftp mc midnight-commander expect expect telnet telnet nc netcat ct 'pipx install chromaterm' )
+typeset -gA _rmt_pkg_apt=( fzf fzf lftp lftp mc mc expect expect telnet telnet nc netcat-openbsd ct 'pipx install chromaterm' secret-tool libsecret-tools )
+typeset -gA _rmt_pkg_dnf=( fzf fzf lftp lftp mc mc expect expect telnet telnet nc nmap-ncat ct 'pipx install chromaterm' secret-tool libsecret )
+
+# _rmt_install_cmd <tool>: how to install it here -> REPLY
+_rmt_install_cmd() {
+    local p
+    if [[ ${_rmt_pkg_brew[$1]-} == *' '* ]]; then REPLY=$_rmt_pkg_brew[$1]
+    elif [[ -n ${_rmt_pkg_brew[$1]-} ]] && (( $+commands[brew] )); then REPLY="brew install $_rmt_pkg_brew[$1]"
+    elif [[ -n ${p::=${_rmt_pkg_apt[$1]-}} ]] && (( $+commands[apt-get] )); then REPLY="sudo apt install $p"
+    elif [[ -n ${p::=${_rmt_pkg_dnf[$1]-}} ]] && (( $+commands[dnf] )); then REPLY="sudo dnf install $p"
+    elif [[ -n ${_rmt_pkg_brew[$1]-} ]]; then REPLY="brew install $_rmt_pkg_brew[$1]"
+    else REPLY="install $1 with your package manager"
+    fi
+}
+
+# _rmt_need <tool> <caller>: a tool the caller cannot work without; missing -> error with the install command
 _rmt_need() {
     (( $+commands[$1] )) && return 0
-    _ui_err "$2 needs $1 (brew install $3)"
+    _rmt_install_cmd $1
+    _ui_err "$2 needs $1 — $REPLY"
     return 1
+}
+
+# _rmt_tip <tool> <what it adds>: an optional tool is missing; say so once per shell.
+# REMOTE_TIPS=0 turns the tips off; remote-doctor lists every tool.
+typeset -gA _rmt_tipped
+_rmt_tip() {
+    [[ ${REMOTE_TIPS-1} == 0 || -n ${_rmt_tipped[$1]-} ]] && return 0
+    _rmt_tipped[$1]=1
+    _rmt_install_cmd $1
+    _ui_hint "Tip: $1 adds $2 — $REPLY  (remote-doctor lists all, REMOTE_TIPS=0 hides tips)"
 }
 
 _rmt_lftp_hint() {

@@ -128,7 +128,7 @@ _rmt_pick() {
             _ui_usage $cmd '[query] | -- <query> | -h'
             return 2 ;;
     esac
-    (( $+commands[fzf] )) || { _ui_err "$cmd: fzf not found"; _ui_hint "brew install fzf, or $_rmt_kind_open[$kind] <alias>"; return 1; }
+    _rmt_need fzf $cmd || { _ui_hint "or open a host directly: $_rmt_kind_open[$kind] <alias>"; return 1; }
     _rmt_pick_fzf_args $kind pick
     sel=$(FZF_QUERY="$*" "$_RMT_HELPER" hosts $kind | fzf "${reply[@]}" --query="$*") || return
     out=( "${(@f)sel}" )

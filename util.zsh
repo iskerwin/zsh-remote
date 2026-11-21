@@ -57,7 +57,8 @@ _rmt_help() {
 
 # Whether ChromaTerm (ct) is installed and actually runs; if not, warn once and let the caller fall back
 _rmt_ct_usable() {
-    (( $+commands[ct] )) && ( command ct --version ) &>/dev/null && return 0
-    _ui_warn "ChromaTerm unavailable, falling back to plain $1"
+    (( $+commands[ct] )) || { _rmt_tip ct 'highlighting'; return 1; }
+    ( command ct --version ) &>/dev/null && return 0
+    _ui_warn "ChromaTerm is installed but does not run, falling back to plain $1"
     return 1
 }

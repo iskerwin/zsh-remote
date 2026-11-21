@@ -69,6 +69,7 @@ _netbak_fetch() {
     # Telnet devices: address, port and user resolved with ssh -F ~/.ssh/telnet_config -G, passed to the script
     if _rmt_proto "$host" ssh telnet && [[ $REPLY == telnet ]]; then
         proto=telnet
+        _rmt_need telnet "net-backup $host" || return 1
         _rmt_resolve "$host" telnet || { _ui_err "$host: cannot resolve it in the telnet config"; return 1; }
         args=( -telnet "$_rmt_g[hostname]" "$_rmt_g[port]" "$_rmt_g[user]" )
     fi
@@ -187,6 +188,7 @@ net-backup() {
         local -i w=0
         local label keys
         for host in $reply; do (( ${(m)#host} > w )) && w=${(m)#host}; done
+        _rmt_need fzf net-backup || { _ui_hint 'or name the devices: net-backup <alias|@group...>'; return 1; }
         _ui_fzf_label grn ' net-backup'; label=$REPLY
         _ui_fzf_keys blu Tab Select '↵' 'Back up'; keys=$REPLY
         hosts=( ${(f)"$(for host in $reply; do
@@ -197,6 +199,7 @@ net-backup() {
         (( $#hosts )) || return 1
     fi
 
+    _rmt_need expect net-backup || return 1
     _netbak_unique "${hosts[@]}"
     hosts=( "${reply[@]}" )
     for host in $hosts; do

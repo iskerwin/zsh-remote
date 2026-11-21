@@ -192,6 +192,7 @@ fetched=()
 net-backup router1 router2 >/dev/null 2>&1
 t_eq 'net-backup: different destinations are backed up separately' 'router1 router2' "$fetched"
 fetched=()
+hash fzf=${commands[true]:-/bin/true}   # the fzf check looks at commands; the function below does the picking
 fzf() { command cat > "$tmp/netbak-picker"; print -rl -- group-a group-b; }
 net-backup >/dev/null 2>&1
 t_eq 'net-backup: picking one destination twice fetches once' group-a "$fetched"

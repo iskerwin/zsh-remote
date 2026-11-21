@@ -57,7 +57,10 @@ _ssha_ensure_agent() {
 # Key picker
 # ══════════════════════════════════════════════
 _ssha_picker() {
-    _rmt_need fzf ssh-ag || return 1
+    _rmt_need_fzf ssh-ag || return 1
+    local -a newer
+    _ui_fzf_since 0.61 && newer+=( --ghost='key name, type or comment' )
+    _ui_fzf_since 0.68 && newer+=( --preview-wrap-sign='   ' )
     local h=${(q)_RMT_HELPER} label
     _ui_fzf_label grn " $_rmt_i[key]  ssh-agent"; label=$REPLY
     local pkeys; _ui_fzf_keys cyn '^/' Hide; pkeys=$REPLY
@@ -65,7 +68,7 @@ _ssha_picker() {
     "$_RMT_HELPER" keys | fzf "${_rmt_fzf_opts[@]}" \
         --with-nth=3 \
         --input-label="$label" \
-        --ghost='key name, type or comment' \
+        "${newer[@]}" \
         --list-label="$REPLY" \
         --preview-label="$pkeys" \
         --preview="$h key {1} {2}" \

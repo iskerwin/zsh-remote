@@ -10,12 +10,18 @@ remote-doctor() {
     local t what
     _ui_head remote-doctor 'helper tools'
     _ui_sect required
-    for t what in \
-        ssh 'every command' \
-        fzf 'the pickers (*-pick, ssh-ag, net-backup without arguments)'; do
-        _rmt_doctor_row $t "$what" || (( ++missing ))
-    done
-    _ui_sect optional 'commands work without them, minus what they add'
+    _rmt_doctor_row ssh 'every command' || (( ++missing ))
+    t='the pickers (*-pick, ssh-ag, net-backup without arguments)'
+    if (( $+commands[fzf] )) && ! _ui_fzf_since 0.58; then
+        _ui_fzf_ver
+        what=$(( REPLY / 1000000 )).$(( REPLY / 1000 % 1000 )).$(( REPLY % 1000 ))
+        (( $+commands[brew] )) && REPLY='brew upgrade fzf' || REPLY='github.com/junegunn/fzf/releases'
+        _ui_warn "fzf  ${_ui[gry]}$t${_ui[r]}  $what is too old, needs 0.58+ → $REPLY"
+        (( ++missing ))
+    else
+        _rmt_doctor_row fzf "$t" || (( ++missing ))
+    fi
+    _ui_sect optional 'only the commands listed need them'
     for t what in \
         ct 'ChromaTerm highlighting in ssh-ct / telnet-ct' \
         lftp 'sftp-open (falls back to sftp); ftp-open needs it' \

@@ -24,7 +24,7 @@ zsh 5.8+ and OpenSSH. Everything else is optional, and a command that needs a mi
 
 | Tool | Used for | Without it |
 |---|---|---|
-| [fzf](https://github.com/junegunn/fzf) 0.61+ | the pickers | open hosts directly: `ssh-ct <alias>`, `ftp-open <alias>`, … |
+| [fzf](https://github.com/junegunn/fzf) 0.58+ | the pickers | open hosts directly: `ssh-ct <alias>`, `ftp-open <alias>`, … |
 | [ChromaTerm](https://github.com/hSaria/ChromaTerm) (`ct`) | highlighting in `ssh-ct` / `telnet-ct` | plain ssh / telnet, with a one-time tip |
 | `lftp` | `sftp-open`, `ftp-open` | `sftp-open` uses sftp (one-time tip); `ftp-open` stops with the install command |
 | `mc` | two-pane browser (`^O`, `--tui`) | error with the install command |

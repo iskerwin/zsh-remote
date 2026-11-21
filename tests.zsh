@@ -207,6 +207,7 @@ assert 'ftp-open --tui: FTPS refused (mc has no TLS)' 1 "$rc"
 
 # Pickers: a fake fzf records its arguments and input and selects $PICK; the four open commands are replaced by recorders
 print -r -- '#!/bin/sh
+[ "$1" = --version ] && { echo "0.70.0 (fake)"; exit 0; }
 printf "%s\n" "$@" > "$PICK_ARGS"
 # $PICK_TUI simulates ^O: the print(tui) action outputs a tui line first
 [ -n "$PICK_TUI" ] && echo tui
@@ -329,4 +330,21 @@ assert 'remote-doctor: fails when a required tool is missing' 1 $rc
 mkdir -p $tmp/nonc; for c in zsh perl ssh cat awk grep sed tr cut sort head tail mktemp rm; do ln -s ${commands[$c]} $tmp/nonc/$c; done
 print -rl -- 'Host shut' '  HostName 127.0.0.1' '  Port 9' > $tmp/probe_cfg
 assert 'probe without nc: closed port' 1 "$(env -u ZSH_UI_DIR PATH=$tmp/nonc REMOTE_TELNET_CONFIG=$tmp/probe_cfg $commands[zsh] -f $here/helper probe telnet shut 2>&1 | command grep -c 'Port 9 closed')"
+
+# fzf versions: older than 0.58 is refused with the upgrade hint; newer options only when fzf has them
+mkdir -p $tmp/fzfver
+fzfver() {  # fzfver <version> → ssh-pick's error, or which of --ghost / --preview-wrap-sign it passed
+    print -r -- "#!/bin/sh
+[ \"\$1\" = --version ] && { echo '$1 (fake)'; exit 0; }
+printf '%s\n' \"\$@\" > $tmp/fzfver/args; cat >/dev/null; exit 1" > $tmp/fzfver/fzf
+    chmod +x $tmp/fzfver/fzf; command rm -f $tmp/fzfver/args
+    env -u ZSH_UI_DIR -u FZF_DEFAULT_OPTS PATH=$tmp/fzfver:${PATH#$tmp/sftp-bin:} HOME=$tmp REMOTE_SSH_CONFIG=/dev/null \
+        zsh -f -c 'compdef() { :; }; ssh-add() { return 1; }; source $1/zsh-remote.plugin.zsh; ssh-pick' _ $here > $tmp/fzfver/out 2>&1 || true   # ssh-pick fails here on purpose
+    command grep -o 'needs fzf 0.58 or newer, found [0-9.]*' $tmp/fzfver/out || true
+    [[ -e $tmp/fzfver/args ]] && print -r -- "ghost=$(command grep -c '^--ghost=' $tmp/fzfver/args) wrap=$(command grep -c '^--preview-wrap-sign=' $tmp/fzfver/args)"
+}
+assert 'fzf 0.44: refused' 'needs fzf 0.58 or newer, found 0.44.1' "$(fzfver 0.44.1)"
+assert 'fzf 0.60: no --ghost, no --preview-wrap-sign' 'ghost=0 wrap=0' "$(fzfver 0.60.3)"
+assert 'fzf 0.61: --ghost' 'ghost=1 wrap=0' "$(fzfver 0.61.0)"
+assert 'fzf 0.68: both' 'ghost=1 wrap=1' "$(fzfver 0.68.0)"
 print -r -- "$passed passed"

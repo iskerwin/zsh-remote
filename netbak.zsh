@@ -188,14 +188,16 @@ net-backup() {
         local -i w=0
         local label keys
         for host in $reply; do (( ${(m)#host} > w )) && w=${(m)#host}; done
-        _rmt_need fzf net-backup || { _ui_hint 'or name the devices: net-backup <alias|@group...>'; return 1; }
+        _rmt_need_fzf net-backup || { _ui_hint 'or name the devices: net-backup <alias|@group...>'; return 1; }
+        local -a newer
+        _ui_fzf_since 0.61 && newer=( --ghost='alias, @group or description' )
         _ui_fzf_label grn ' net-backup'; label=$REPLY
         _ui_fzf_keys blu Tab Select '↵' 'Back up'; keys=$REPLY
         hosts=( ${(f)"$(for host in $reply; do
             line=( "${(@ps:\x1f:)_netbak_info[$host]}" )
             print -r -- "$host"$'\t'"${(mr:w:)host}  ${line[1]:+@$line[1]  }$line[2]${${(M)line[3]:#telnet}:+  · telnet}"
         done | fzf "${_ui_fzf_opts[@]}" --multi --height=~40% --delimiter=$'\t' --with-nth=2 --accept-nth=1 \
-            --input-label="$label" --list-label="$keys" --ghost='alias, @group or description')"} )
+            --input-label="$label" --list-label="$keys" "${newer[@]}")"} )
         (( $#hosts )) || return 1
     fi
 

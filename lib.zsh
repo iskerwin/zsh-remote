@@ -78,7 +78,6 @@ typeset -ga _rmt_fzf_opts=(
     --height=100%
     --delimiter=$'\t'
     --preview-window="right,${REMOTE_PREVIEW_WIDTH}%,wrap,<90(down,50%,wrap)"
-    --preview-wrap-sign='   '
     --bind='ctrl-o:ignore'
 )
 
@@ -379,6 +378,20 @@ _rmt_need() {
     (( $+commands[$1] )) && return 0
     _rmt_install_cmd $1
     _ui_err "$2 needs $1 — $REPLY"
+    return 1
+}
+
+# _rmt_need_fzf <caller>: fzf 0.58+ (input / list / preview boxes); options newer than that are
+# added only when the installed fzf has them (_ui_fzf_since)
+_rmt_need_fzf() {
+    _rmt_need fzf $1 || return 1
+    _ui_fzf_since 0.58 && return 0
+    _ui_fzf_ver
+    local found=$(( REPLY / 1000000 )).$(( REPLY / 1000 % 1000 )).$(( REPLY % 1000 ))
+    if (( $+commands[brew] )); then REPLY='brew upgrade fzf'
+    else REPLY='https://github.com/junegunn/fzf/releases (distribution packages are often older)'
+    fi
+    _ui_err "$1 needs fzf 0.58 or newer, found $found — $REPLY"
     return 1
 }
 

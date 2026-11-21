@@ -54,11 +54,7 @@ _rmt_pick_fzf_args() {
         "${_rmt_fzf_opts[@]}"
         --with-nth=4
         --input-label="$REPLY"
-        --ghost='alias, host, @group, #tag or description'
         --preview="$h host $kind {1} {2} {3} {5}"
-        # Group separator rows have an empty alias: not counted, skipped, Enter ignored
-        --info-command='n=$(grep -c . {*f1}); [ "$n" = 1 ] && echo "1 host" || echo "$n hosts"'
-        --bind='result:transform:[ -z {1} ] && grep -q . {*f1} && echo down'
         # Tree layout while browsing, flat (with an @group column) while searching:
         # reload when the query empties or fills (field 6 is the current layout); first replaces the shared change:first
         --bind="change:first+transform:m=t; [ -n \"\$FZF_QUERY\" ] && m=f; [ {6} = \$m ] || echo 'reload($h hosts $kind)'"
@@ -69,6 +65,14 @@ _rmt_pick_fzf_args() {
         --bind="ctrl-e:execute($h edit-config $kind)+reload($h hosts $kind)"
         --bind="ctrl-y:execute-silent([ -n {1} ] && printf %s {1} | $REMOTE_CLIP)"
     )
+    # Options newer than the minimum fzf 0.58
+    _ui_fzf_since 0.61 && reply+=( --ghost='alias, host, @group, #tag or description' )
+    # Group separator rows have an empty alias: not counted and skipped ({*f} needs fzf 0.63); Enter ignores them
+    _ui_fzf_since 0.63 && reply+=(
+        --info-command='n=$(grep -c . {*f1}); [ "$n" = 1 ] && echo "1 host" || echo "$n hosts"'
+        --bind='result:transform:[ -z {1} ] && grep -q . {*f1} && echo down'
+    )
+    _ui_fzf_since 0.68 && reply+=( --preview-wrap-sign='   ' )
     # ^O prints a marker line before the row; _rmt_pick reads it
     if [[ ${2-} == pick && -n ${_rmt_kind_tui[$kind]-} ]]; then
         reply+=( --bind="ctrl-o:transform:[ -n {1} ] && echo 'print(tui)+accept'" )
@@ -128,7 +132,7 @@ _rmt_pick() {
             _ui_usage $cmd '[query] | -- <query> | -h'
             return 2 ;;
     esac
-    _rmt_need fzf $cmd || { _ui_hint "or open a host directly: $_rmt_kind_open[$kind] <alias>"; return 1; }
+    _rmt_need_fzf $cmd || { _ui_hint "or open a host directly: $_rmt_kind_open[$kind] <alias>"; return 1; }
     _rmt_pick_fzf_args $kind pick
     sel=$(FZF_QUERY="$*" "$_RMT_HELPER" hosts $kind | fzf "${reply[@]}" --query="$*") || return
     out=( "${(@f)sel}" )

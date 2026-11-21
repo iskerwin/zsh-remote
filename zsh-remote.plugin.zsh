@@ -21,6 +21,4 @@ export ZSH_REMOTE_DIR=${${(%):-%x}:A:h}
     local f
     source $ZSH_REMOTE_DIR/lib.zsh
     for f in picker ssh sftp telnet ftp agent netbak doctor; do source $ZSH_REMOTE_DIR/$f.zsh; done
-    # A host shell may add -h / --help to every command's first-argument completion
-    (( $+functions[_cmp_add_help] )) && _cmp_add_help $ZSH_REMOTE_DIR
 }

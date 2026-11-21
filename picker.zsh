@@ -143,8 +143,8 @@ _rmt_pick() {
     $open "${out[1]%%$'\t'*}"
 }
 
-# Query words are free text; -h / --help is added by _cmp_add_help (init.zsh)
-_rmt_pick_complete() { _message 'query'; }
+# Pickers: -h / --help, otherwise free-text query words
+_rmt_pick_complete() { _arguments '(- *)'{-h,--help}'[show keys and help]' '*:query: '; }
 
 # Alias completion for open commands: hosts of a kind's file, with descriptions
 _rmt_cmp_hosts() {

@@ -223,7 +223,7 @@ pick_run() {
         shift
         source $tmp/load.zsh
         _RMT_HELPER=$tmp/pick-helper
-        for f in ssh-ct sftp-open telnet-ct ftp-open; do
+        for f in ssh-to sftp-open telnet-to ftp-open; do
             functions[$f]="print -r -- \"$f \$*\" > \"\$SFTP_TEST_LOG\""
         done
         "$@" </dev/null
@@ -234,20 +234,20 @@ pick_run() {
 }
 listed() { print -r -- ${(j: :)${(f)"$(cut -f1 $tmp/pick-list | command grep .)"}}; }
 has_arg() { command grep -qx -e "$1" $tmp/pick-args && print yes; }
-assert 'ssh-pick: Enter runs ssh-ct' 'ssh-ct web' "$(pick_run web ssh-pick we)"
+assert 'ssh-pick: Enter runs ssh-to' 'ssh-to web' "$(pick_run web ssh-pick we)"
 assert 'ssh-pick: lists ssh config hosts only' 'web pw' "$(listed)"
 assert 'ssh-pick: query reaches fzf' yes "$(has_arg --query=we)"
 assert 'ssh-pick: has ^A' yes "$(command grep -q '^--bind=ctrl-a:' $tmp/pick-args && print yes)"
 assert 'sftp-pick: Enter runs sftp-open' 'sftp-open pw' "$(pick_run pw sftp-pick)"
 assert 'sftp-pick: lists ssh config hosts' 'web pw' "$(listed)"
-assert 'telnet-pick: Enter runs telnet-ct' 'telnet-ct sw' "$(pick_run sw telnet-pick)"
+assert 'telnet-pick: Enter runs telnet-to' 'telnet-to sw' "$(pick_run sw telnet-pick)"
 assert 'telnet-pick: lists telnet_config only' sw "$(listed)"
 assert 'telnet-pick: no ^A' no "$(command grep -q '^--bind=ctrl-a:' $tmp/pick-args && print yes || print no)"
 assert 'ftp-pick: Enter runs ftp-open' 'ftp-open nas' "$(pick_run nas ftp-pick)"
 assert 'ftp-pick: lists ftp_config only' 'nas pub plain' "$(listed)"
 assert 'ftp-pick: FTP rows show the icon, not the port' no "$(cut -f4 $tmp/pick-list | command grep -qE '(^|─ )(990|21) ' && print yes || print no)"
 assert 'ftp-pick: ^E edits the ftp file' yes "$(has_arg "--bind=ctrl-e:execute($tmp/pick-helper edit-config ftp)+reload($tmp/pick-helper hosts ftp)")"
-assert 'pick: -- keeps a dash query' 'ssh-ct web' "$(pick_run web ssh-pick -- -x)"
+assert 'pick: -- keeps a dash query' 'ssh-to web' "$(pick_run web ssh-pick -- -x)"
 assert 'pick: dash query reaches fzf' yes "$(has_arg --query=-x)"
 rc=0; pick_run '' ssh-pick -x >/dev/null || rc=$?
 assert 'pick: unknown option fails' 2 "$rc"
@@ -281,13 +281,13 @@ tab_run() {
 export PATH="$tmp/sftp-bin:$PATH"
 assert 'ftp \<Tab>: line becomes ftp-open <alias>' 'ftp-open nas ' "$(tab_run nas _fzf_complete_ftp 'ftp ')"
 assert 'sftp-open \<Tab>: line becomes sftp-open <alias>' 'sftp-open web ' "$(tab_run web _fzf_complete_sftp-open 'sftp-open ')"
-assert 'ssh \<Tab>: keeps typed arguments, ssh becomes ssh-ct' 'ssh-ct -p 2222 web' "$(tab_run web _fzf_complete_ssh 'ssh -p 2222 ')"
-assert 'ssh-ct \<Tab>: line kept' 'ssh-ct web' "$(tab_run web _fzf_complete_ssh-ct 'ssh-ct ')"
+assert 'ssh \<Tab>: keeps typed arguments, ssh becomes ssh-to' 'ssh-to -p 2222 web' "$(tab_run web _fzf_complete_ssh 'ssh -p 2222 ')"
+assert 'ssh-to \<Tab>: line kept' 'ssh-to web' "$(tab_run web _fzf_complete_ssh-to 'ssh-to ')"
 assert 'ssh \<Tab>: an assignment before ssh is not rewritten' 'FOO=1 ssh web' "$(tab_run web _fzf_complete_ssh 'FOO=1 ssh ')"
 assert '\<Tab>: nothing picked leaves the line' 'ftp ' "$(tab_run '' _fzf_complete_ftp 'ftp ')"
-help=$(source $tmp/load.zsh; ssh-ct -h; telnet-ct --help; sftp-open -h; ftp-open -h)
+help=$(source $tmp/load.zsh; ssh-to -h; telnet-to --help; sftp-open -h; ftp-open -h)
 assert 'open commands -h list their session commands' yes \
-    "${${(M)help:#*ssh-ct*'~.'*telnet-ct*'Ctrl-] quit'*sftp-open*mirror*ftp-open*'#_Proto ftps'*}:+yes}"
+    "${${(M)help:#*ssh-to*'~.'*telnet-to*'Ctrl-] quit'*sftp-open*mirror*ftp-open*'#_Proto ftps'*}:+yes}"
 
 # zsh-ui: the plugin works without it (ui-fallback.zsh) and zsh-ui wins in either load order;
 # helper processes load zsh-ui from ZSH_UI_DIR when it is set.
@@ -318,8 +318,8 @@ assert 'install: brew formula' 'brew install midnight-commander' "$(inst brew mc
 assert 'install: apt package' 'sudo apt install netcat-openbsd' "$(inst apt nc)"
 assert 'install: full command anywhere' 'brew install iskerwin/tap/tinge' "$(inst apt tinge)"
 assert 'install: Linux-only tool without apt' 'install secret-tool with your package manager' "$(inst brew secret-tool)"
-assert '_rmt_need: error names the caller and the command' '✗ telnet-ct needs telnet — sudo apt install telnet' \
-    "$(env -u ZSH_UI_DIR PATH=$tmp/pm/apt $commands[zsh] -f -c 'source $1/lib.zsh; _rmt_need telnet telnet-ct' _ $here 2>&1)"
+assert '_rmt_need: error names the caller and the command' '✗ telnet-to needs telnet — sudo apt install telnet' \
+    "$(env -u ZSH_UI_DIR PATH=$tmp/pm/apt $commands[zsh] -f -c 'source $1/lib.zsh; _rmt_need telnet telnet-to' _ $here 2>&1)"
 assert '_rmt_tip: once per shell' 1 \
     "$(env -u ZSH_UI_DIR PATH=$tmp/pm/brew $commands[zsh] -f -c 'source $1/lib.zsh; _rmt_tip tinge x; _rmt_tip tinge x' _ $here 2>&1 | command grep -c Tip)"
 assert '_rmt_tip: REMOTE_TIPS=0 is silent' '' \

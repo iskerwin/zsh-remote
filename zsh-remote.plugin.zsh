@@ -2,9 +2,9 @@
 # and network device config backups. One file per protocol, all on a shared picker:
 #
 #   file         hosts from                          picker        opens with
-#   ssh.zsh      ~/.ssh/config (+ Includes)          ssh-pick      ssh-ct     (tinge, ssh fallback)
+#   ssh.zsh      ~/.ssh/config (+ Includes)          ssh-pick      ssh-to     (tinge, ssh fallback)
 #   sftp.zsh     ~/.ssh/config (+ Includes)          sftp-pick     sftp-open  (lftp over SFTP)
-#   telnet.zsh   ~/.ssh/telnet_config                telnet-pick   telnet-ct  (tinge, telnet fallback)
+#   telnet.zsh   ~/.ssh/telnet_config                telnet-pick   telnet-to  (tinge, telnet fallback)
 #   ftp.zsh      ~/.ssh/ftp_config                   ftp-pick      ftp-open   (lftp over FTP / FTPS)
 #   agent.zsh    ssh-agent keys                      ssh-ag
 #   netbak.zsh   network devices in the configs      net-backup (Expect: net-backup.exp)

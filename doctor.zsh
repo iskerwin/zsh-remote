@@ -23,10 +23,10 @@ remote-doctor() {
     fi
     _ui_sect optional 'only the commands listed need them'
     for t what in \
-        tinge 'highlighting in ssh-ct / telnet-ct' \
+        tinge 'highlighting in ssh-to / telnet-to' \
         lftp 'sftp-open (falls back to sftp); ftp-open needs it' \
         mc 'two-pane browser: ^O, --tui' \
-        telnet 'telnet-ct and telnet devices in net-backup' \
+        telnet 'telnet-to and telnet devices in net-backup' \
         expect 'net-backup' \
         nc '^T banner for Telnet / FTP (the port check works without it)'; do
         _rmt_doctor_row $t "$what"

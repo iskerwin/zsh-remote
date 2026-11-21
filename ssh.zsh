@@ -57,7 +57,7 @@ ssh-cfg() {
 }
 
 compdef _rmt_pick_complete ssh-pick
-compdef _nothing ssh-cfg
+compdef _rmt_cmp_help ssh-cfg
 compdef ssh-ct=ssh
 
 # ssh \<Tab> keeps the arguments already typed: ssh -p 2222 \<Tab> → ssh-ct -p 2222 <host>

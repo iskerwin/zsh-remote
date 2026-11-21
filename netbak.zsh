@@ -245,6 +245,7 @@ _rmt_cmp_netbak_targets() {
 
 _net-backup() {
     _arguments \
+        '(- *)'{-h,--help}'[show help]' \
         '(- *)--forget[delete the passwords saved in the keychain]:device:_rmt_cmp_netbak_hosts' \
         '(- *)'{-h,--help}'[show usage]' \
         '*:device or @group:_rmt_cmp_netbak_targets'

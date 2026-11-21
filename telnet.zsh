@@ -53,7 +53,7 @@ telnet-cfg() {
 }
 
 compdef _rmt_pick_complete telnet-pick
-compdef _nothing telnet-cfg
+compdef _rmt_cmp_help telnet-cfg
 compdef telnet-ct=telnet
 
 _fzf_complete_telnet()         { _rmt_fzf_complete_open telnet "$@"; }

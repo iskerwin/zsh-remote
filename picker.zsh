@@ -143,6 +143,9 @@ _rmt_pick() {
     $open "${out[1]%%$'\t'*}"
 }
 
+# Commands without arguments: only -h / --help
+_rmt_cmp_help() { _arguments '(- *)'{-h,--help}'[show help]'; }
+
 # Pickers: -h / --help, otherwise free-text query words
 _rmt_pick_complete() { _arguments '(- *)'{-h,--help}'[show keys and help]' '*:query: '; }
 

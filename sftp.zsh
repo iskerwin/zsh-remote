@@ -54,6 +54,7 @@ sftp-open() {
 
 _sftp-open() {
     _arguments \
+        '(- *)'{-h,--help}'[show help]' \
         '(- *)--tui[open two-pane in mc]:SSH host:{_rmt_cmp_hosts sftp}' \
         '1:SSH host:{_rmt_cmp_hosts sftp}'
 }

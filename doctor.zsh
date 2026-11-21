@@ -56,4 +56,4 @@ _rmt_doctor_row() {
     fi
 }
 
-compdef _nothing remote-doctor
+compdef _rmt_cmp_help remote-doctor

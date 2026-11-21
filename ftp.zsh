@@ -100,6 +100,7 @@ ftp-open() {
 
 _ftp-open() {
     _arguments \
+        '(- *)'{-h,--help}'[show help]' \
         '(- *)--forget[delete the saved password]:FTP host:{_rmt_cmp_hosts ftp}' \
         '(- *)--tui[open two-pane in mc]:FTP host:{_rmt_cmp_hosts ftp}' \
         '1:FTP host:{_rmt_cmp_hosts ftp}'
@@ -112,7 +113,7 @@ ftp-cfg() {
 }
 
 compdef _rmt_pick_complete ftp-pick
-compdef _nothing ftp-cfg
+compdef _rmt_cmp_help ftp-cfg
 compdef _ftp-open ftp-open
 
 _fzf_complete_ftp()           { _rmt_fzf_complete_open ftp "$@"; }

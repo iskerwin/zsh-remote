@@ -210,7 +210,7 @@ print -r -- '#!/bin/sh
 printf "%s\n" "$@" > "$PICK_ARGS"
 # $PICK_TUI simulates ^O: the print(tui) action outputs a tui line first
 [ -n "$PICK_TUI" ] && echo tui
-tee "$PICK_LIST" | awk -F "\t" -v p="$PICK" "\$1 == p { print; exit }"' > $tmp/sftp-bin/fzf
+tee "$PICK_LIST" | awk -F "\t" -v p="$PICK" "\$1 == p && !done { print; done = 1 }"' > $tmp/sftp-bin/fzf
 print -r -- "#!/bin/sh
 exec zsh -f ${(q)here}/helper \"\$@\"" > $tmp/pick-helper
 chmod +x $tmp/sftp-bin/fzf $tmp/pick-helper

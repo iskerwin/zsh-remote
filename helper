@@ -301,16 +301,7 @@ cmd_host_addkey() {
     done
 }
 
-# The configs are managed by chezmoi here; editing the target directly would
-# be overwritten on the next apply, so go through `chezmoi edit` when possible.
-cmd_edit_config() {
-    _rmt_cfg_file "${1:-ssh}"
-    if (( $+commands[chezmoi] )) && chezmoi source-path "$REPLY" &>/dev/null; then
-        chezmoi edit --apply "$REPLY"
-    else
-        ${=EDITOR:-vi} "$REPLY"
-    fi
-}
+cmd_edit_config() { _rmt_edit_config "${1:-ssh}"; }
 
 # ══════════════════════════════════════════════
 # Keys

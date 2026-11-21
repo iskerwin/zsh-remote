@@ -291,6 +291,12 @@ assert 'open commands -h list their session commands' yes \
 # zsh-ui: the plugin works without it (ui-fallback.zsh) and zsh-ui wins in either load order;
 # helper processes load zsh-ui from ZSH_UI_DIR when it is set.
 # ssh-add reports a working agent and HOME is temporary, so loading agent.zsh never starts a real ssh-agent
+# ssh-cfg / telnet-cfg / ftp-cfg open the protocol's file; not managed by chezmoi, so $VISUAL is used
+for k f in ssh $tmp/cfg/ssh telnet $tmp/cfg/telnet ftp $tmp/cfg/ftp; do
+    assert "$k-cfg: edits its file" $f "$(env -u ZSH_UI_DIR HOME=$tmp REMOTE_SSH_CONFIG=$tmp/cfg/ssh REMOTE_TELNET_CONFIG=$tmp/cfg/telnet REMOTE_FTP_CONFIG=$tmp/cfg/ftp VISUAL='print -r --' \
+        zsh -f -c 'compdef() { :; }; ssh-add() { return 1; }; source $1/zsh-remote.plugin.zsh; $2-cfg' _ $here $k 2>/dev/null)"
+done
+
 print -r -- "compdef() { :; }; ssh-add() { return 1; }; HOME=${(q)tmp}" > $tmp/stub.zsh
 assert 'fallback without zsh-ui' ui-fallback.zsh \
     "$(env -u ZSH_UI_DIR zsh -f -c 'source $1; source $2/zsh-remote.plugin.zsh 2>/dev/null; print -r -- ${functions_source[_ui_err]:t}' _ $tmp/stub.zsh $here)"

@@ -2,6 +2,7 @@
 # ftp.zsh — FTP / FTPS servers from ~/.ssh/ftp_config (ssh config syntax,
 # never Included; a block may say `#_Proto ftps` for implicit TLS)
 #   ftp-pick [query]          fzf picker, Enter runs ftp-open
+#   ftp-cfg                   edit ~/.ssh/ftp_config
 #   ftp-open <alias>          lftp, password from the keychain
 #   ftp-open --tui <alias>    mc, two panes (^O in the picker; not FTPS)
 #   ftp-open --forget <alias> drop the stored password
@@ -103,7 +104,15 @@ _ftp-open() {
         '(- *)--tui[open two-pane in mc]:FTP host:{_rmt_cmp_hosts ftp}' \
         '1:FTP host:{_rmt_cmp_hosts ftp}'
 }
+# @desc: Edit the FTP host file (~/.ssh/ftp_config), through chezmoi when it manages it
+# @usage: ftp-cfg
+ftp-cfg() {
+    [[ ${1-} == (-h|--help) ]] && { _rmt_help $0; return 0; }
+    _rmt_edit_config ftp
+}
+
 compdef _rmt_pick_complete ftp-pick
+compdef _nothing ftp-cfg
 compdef _ftp-open ftp-open
 
 _fzf_complete_ftp()           { _rmt_fzf_complete_open ftp "$@"; }

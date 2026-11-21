@@ -11,6 +11,7 @@ Your SSH, SFTP, Telnet and FTP hosts in fzf pickers, read from ssh-config-style 
 | `sftp-pick` · `sftp-open <alias>` | Browse an SSH host's files over SFTP in lftp; `--tui` opens two panes in mc |
 | `telnet-pick` · `telnet-ct <alias>` | Telnet devices from `~/.ssh/telnet_config` |
 | `ftp-pick` · `ftp-open <alias>` | FTP / FTPS servers from `~/.ssh/ftp_config`, password in the keychain |
+| `ssh-cfg` · `telnet-cfg` · `ftp-cfg` | Edit a host file (through `chezmoi edit --apply` when chezmoi manages it, else `$VISUAL` / `$EDITOR`); `^E` in a picker does the same |
 | `ssh-ag [status \| clear]` | Add and remove ssh-agent keys with fzf |
 | `net-backup [alias\|@group...]` | Back up switch, router and firewall configs (Ruijie, Cisco, Huawei, H3C) over SSH or Telnet |
 

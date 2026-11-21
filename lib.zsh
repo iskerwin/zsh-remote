@@ -192,6 +192,18 @@ _rmt_cfg_file() {
     esac
 }
 
+# _rmt_edit_config <kind>: edit that protocol's config file. A file managed by
+# chezmoi goes through `chezmoi edit --apply` (editing the target would be
+# overwritten on the next apply, and an encrypted source is re-encrypted).
+_rmt_edit_config() {
+    _rmt_cfg_file "$1"
+    if (( $+commands[chezmoi] )) && chezmoi source-path "$REPLY" &>/dev/null; then
+        chezmoi edit --apply "$REPLY"
+    else
+        ${=VISUAL:-${EDITOR:-vi}} "$REPLY"
+    fi
+}
+
 # File a kind's hosts come from (ssh | telnet | ftp) -> REPLY
 _rmt_kind_file() {
     case $1 in

@@ -1,6 +1,7 @@
 # ══════════════════════════════════════════════
 # ssh.zsh — SSH hosts from ~/.ssh/config (+ Includes)
 #   ssh-pick [query]   fzf picker, Enter runs ssh-ct
+#   ssh-cfg            edit ~/.ssh/config
 #   ssh-ct <host> ...  ssh through ChromaTerm, plain ssh when ct is unusable
 #   ssh \<Tab>, ssh-ct \<Tab>   the picker as fzf completion
 # ══════════════════════════════════════════════
@@ -48,7 +49,15 @@ ssh-ct() {
     fi
 }
 
+# @desc: Edit the SSH host file (~/.ssh/config), through chezmoi when it manages it
+# @usage: ssh-cfg
+ssh-cfg() {
+    [[ ${1-} == (-h|--help) ]] && { _rmt_help $0; return 0; }
+    _rmt_edit_config ssh
+}
+
 compdef _rmt_pick_complete ssh-pick
+compdef _nothing ssh-cfg
 compdef ssh-ct=ssh
 
 # ssh \<Tab> keeps the arguments already typed: ssh -p 2222 \<Tab> → ssh-ct -p 2222 <host>

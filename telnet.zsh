@@ -2,6 +2,7 @@
 # telnet.zsh — telnet devices from ~/.ssh/telnet_config (ssh config syntax,
 # never Included, so ssh doesn't see them)
 #   telnet-pick [query]   fzf picker, Enter runs telnet-ct
+#   telnet-cfg            edit ~/.ssh/telnet_config
 #   telnet-ct <alias> | <host> [port]   telnet through ChromaTerm
 #   telnet \<Tab>, telnet-ct \<Tab>     the picker as fzf completion
 # ══════════════════════════════════════════════
@@ -43,7 +44,15 @@ telnet-ct() {
     fi
 }
 
+# @desc: Edit the Telnet host file (~/.ssh/telnet_config), through chezmoi when it manages it
+# @usage: telnet-cfg
+telnet-cfg() {
+    [[ ${1-} == (-h|--help) ]] && { _rmt_help $0; return 0; }
+    _rmt_edit_config telnet
+}
+
 compdef _rmt_pick_complete telnet-pick
+compdef _nothing telnet-cfg
 compdef telnet-ct=telnet
 
 _fzf_complete_telnet()         { _rmt_fzf_complete_open telnet "$@"; }

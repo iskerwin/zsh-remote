@@ -7,7 +7,7 @@ Your SSH, SFTP, Telnet and FTP hosts in fzf pickers, read from ssh-config-style 
 | Command | What it does |
 |---|---|
 | `ssh-pick [query]` | Pick a host from `~/.ssh/config` (and its `Include`s), connect with `ssh-to` |
-| `ssh-to <alias> [ssh options]` | ssh highlighted by [tinge](https://github.com/iskerwin/tinge): its network rules for devices (alias or `#_Tags` with switch, router, firewall, ruijie, cisco, huawei, h3c, network), server rules otherwise; plain ssh if tinge is missing |
+| `ssh-to <alias> [ssh options]` | ssh highlighted by [tinge](https://github.com/iskerwin/tinge), which picks its rule set from the host and its `#_Tags` (see the rule sets' `match`); plain ssh if tinge is missing |
 | `sftp-pick` · `sftp-open <alias>` | Browse an SSH host's files over SFTP in lftp; `--tui` opens two panes in mc |
 | `telnet-pick` · `telnet-to <alias>` | Telnet devices from `~/.ssh/telnet_config` |
 | `ftp-pick` · `ftp-open <alias>` | FTP / FTPS servers from `~/.ssh/ftp_config`, password in the keychain |

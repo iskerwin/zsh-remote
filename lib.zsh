@@ -55,7 +55,7 @@ _rmt_tags() { [[ -n $1 ]] && print -r -- "${_ui[blu]}#${(j: #:)${(s:,:)1// /}}${
 # user@host, plus :port when it isn't the default (22, or the 4th argument)
 _rmt_target() { print -r -- "${1:+$1@}$2${${3:#${4:-22}}:+:$3}"; }
 
-# A network device: its alias or #_Tags contain one of these words (icon, net-backup, tinge rules)
+# A network device: its alias or #_Tags contain one of these words (picker icon, net-backup)
 typeset -g _rmt_device_pat='(ruijie|cisco|huawei|h3c|switch|router|firewall|network)'
 
 # Colored icon for a host, guessed from "alias hostname tags" -> REPLY

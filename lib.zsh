@@ -55,6 +55,9 @@ _rmt_tags() { [[ -n $1 ]] && print -r -- "${_ui[blu]}#${(j: #:)${(s:,:)1// /}}${
 # user@host, plus :port when it isn't the default (22, or the 4th argument)
 _rmt_target() { print -r -- "${1:+$1@}$2${${3:#${4:-22}}:+:$3}"; }
 
+# A network device: its alias or #_Tags contain one of these words (icon, net-backup, tinge rules)
+typeset -g _rmt_device_pat='(ruijie|cisco|huawei|h3c|switch|router|firewall|network)'
+
 # Colored icon for a host, guessed from "alias hostname tags" -> REPLY
 _rmt_host_icon() {
     case ${(L)1} in
@@ -64,8 +67,7 @@ _rmt_host_icon() {
         *debian*)                          REPLY="${_ui[red]}$_rmt_i[debian]" ;;
         *centos*|*rhel*|*rocky*)           REPLY="${_ui[blu]}$_rmt_i[centos]" ;;
         *mac*|*apple*)                     REPLY="${_ui[fg]}$_rmt_i[apple]" ;;
-        *ruijie*|*huawei*|*h3c*|*cisco*|*switch*|*router*|*firewall*|*network*)
-                                           REPLY="${_ui[ylw]}$_rmt_i[net]" ;;
+        *${~_rmt_device_pat}*)             REPLY="${_ui[ylw]}$_rmt_i[net]" ;;
         *)                                 REPLY="${_ui[grn]}$_rmt_i[server]" ;;
     esac
     REPLY+=${_ui[r]}

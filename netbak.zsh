@@ -9,8 +9,7 @@
 
 # Network devices in the ssh and telnet configs (~/.ssh/config with its Includes, ~/.ssh/telnet_config) → reply
 # (aliases), _netbak_info[alias]=group \x1f description \x1f protocol; status 1 when there are none.
-# Same rule as the network device icon in the pickers: alias or #_Tags contains
-# ruijie/cisco/huawei/h3c/switch/router/firewall/network
+# Same rule as the network device icon in the pickers: alias or #_Tags match $_rmt_device_pat
 typeset -gA _netbak_info
 _netbak_hosts() {
         local name desc tags proto group
@@ -18,7 +17,7 @@ _netbak_hosts() {
     _netbak_info=()
     # The list keeps every alias and group; targets are deduplicated by real destination after selection.
     _rmt_host_entries ssh telnet | while IFS=$'\x1f' read -r name desc tags proto group; do
-        [[ "${(L)name} ${(L)tags}" == *(ruijie|cisco|huawei|h3c|switch|router|firewall|network)* ]] || continue
+        [[ "${(L)name} ${(L)tags}" == *${~_rmt_device_pat}* ]] || continue
         reply+=( $name )
         _netbak_info[$name]=$group$'\x1f'$desc$'\x1f'$proto
     done

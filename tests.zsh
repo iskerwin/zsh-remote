@@ -323,6 +323,21 @@ for d in brew apt; do print '#!/bin/sh' > $tmp/pm/$d/${d/apt/apt-get}; chmod +x 
 inst() { PATH=$tmp/pm/$1 $commands[zsh] -f -c 'source $1/lib.zsh; _rmt_install_cmd $2; print -r -- $REPLY' _ $here $2; }
 assert 'install: brew formula' 'brew install midnight-commander' "$(inst brew mc)"
 assert 'install: apt package' 'sudo apt install netcat-openbsd' "$(inst apt nc)"
+# tinge rule sets: network for devices (alias or #_Tags), server for the rest; telnet always network
+mkdir -p $tmp/tinge-bin
+print -r -- '#!/bin/sh
+echo "$*"' > $tmp/tinge-bin/tinge; chmod +x $tmp/tinge-bin/tinge
+print -r -- 'Host core-sw
+    #_Tags switch
+Host web01
+    #_Tags ubuntu
+Host ruijie-* huawei-*' > $tmp/tinge-ssh
+rules() { env -u ZSH_UI_DIR PATH=$tmp/tinge-bin:$PATH REMOTE_SSH_CONFIG=$tmp/tinge-ssh REMOTE_TELNET_CONFIG=/dev/null $commands[zsh] -f -c 'compdef() { :; }; source $1/lib.zsh; for f in picker ssh telnet; do source $1/$f.zsh; done; shift; "$@"' _ $here "$@" 2>&1; }
+assert 'ssh-to: a device by #_Tags gets the network rules' '-c network ssh core-sw' "$(rules ssh-to core-sw)"
+assert 'ssh-to: a server gets the server rules' '-c server ssh -p 2222 web01' "$(rules ssh-to -p 2222 web01)"
+assert 'ssh-to: a Host pattern device by its name' '-c network ssh admin@ruijie-lab' "$(rules ssh-to admin@ruijie-lab)"
+assert 'ssh-to: an address gets the server rules' '-c server ssh root@10.0.0.1' "$(rules ssh-to root@10.0.0.1)"
+assert 'telnet-to: always the network rules' '-c network telnet 10.0.0.2 23' "$(rules telnet-to 10.0.0.2 23)"
 assert 'install: full command anywhere' 'brew install iskerwin/tap/tinge' "$(inst apt tinge)"
 assert 'install: Linux-only tool without apt' 'install secret-tool with your package manager' "$(inst brew secret-tool)"
 assert '_rmt_need: error names the caller and the command' '✗ telnet-to needs telnet — sudo apt install telnet' \

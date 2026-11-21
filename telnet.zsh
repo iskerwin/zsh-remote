@@ -39,7 +39,7 @@ telnet-to() {
     fi
     _rmt_need telnet telnet-to || return 1
     if _rmt_tinge; then
-        command tinge telnet "$@"
+        command tinge -c network telnet "$@"
     else
         command telnet "$@"
     fi

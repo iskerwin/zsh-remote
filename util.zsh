@@ -55,6 +55,23 @@ _rmt_help() {
     print -r -- "  ${_ui[grn]}${usage%% *}${_ui[r]}${_ui[cyn]}${usage#${usage%% *}}${_ui[r]}"
 }
 
+# _rmt_tinge_rules <args...>: tinge's rule set for ssh <args> -> REPLY: network for a network device
+# (the alias from the ssh config, by its name and #_Tags), server for anything else
+_rmt_tinge_rules() {
+    local name desc tags proto group a
+    REPLY=server
+    _rmt_host_entries ssh | while IFS=$'\x1f' read -r name desc tags proto group; do
+        (( ${@[(Ie)$name]} )) || continue
+        [[ "${(L)name} ${(L)tags}" == *${~_rmt_device_pat}* ]] && REPLY=network
+        return 0
+    done
+    # Not a listed alias (a Host pattern such as ruijie-*, or user@address): the name alone
+    for a in "$@"; do
+        [[ $a != -* && ${(L)a} == *${~_rmt_device_pat}* ]] && { REPLY=network; return 0; }
+    done
+    return 0
+}
+
 # Whether tinge is installed for highlighting; if not, tip once and let the caller fall back
 _rmt_tinge() {
     (( $+commands[tinge] )) || { _rmt_tip tinge 'highlighting'; return 1; }

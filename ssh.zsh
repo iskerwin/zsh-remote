@@ -2,7 +2,7 @@
 # ssh.zsh — SSH hosts from ~/.ssh/config (+ Includes)
 #   ssh-pick [query]   fzf picker, Enter runs ssh-to
 #   ssh-cfg            edit ~/.ssh/config
-#   ssh-to <host> ...  ssh highlighted by tinge, plain ssh without it
+#   ssh-to <host> ...  ssh highlighted by tinge (network rules for devices, server rules otherwise)
 #   ssh \<Tab>, ssh-to \<Tab>   the picker as fzf completion
 # ══════════════════════════════════════════════
 
@@ -43,7 +43,8 @@ ssh-pick() {
 ssh-to() {
     [[ ${1-} == (-h|--help) ]] && { _rmt_help $0; _rmt_help_ssh; return 0; }
     if _rmt_tinge; then
-        command tinge ssh "$@"
+        _rmt_tinge_rules "$@"
+        command tinge -c $REPLY ssh "$@"
     else
         command ssh "$@"
     fi

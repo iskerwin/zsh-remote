@@ -328,6 +328,8 @@ mkdir -p $tmp/tinge-bin
 print -r -- '#!/bin/sh
 [ "$1" = --version ] && { echo "tinge 0.3.0"; exit 0; }
 echo "$*"' > $tmp/tinge-bin/tinge; chmod +x $tmp/tinge-bin/tinge
+# telnet-to checks telnet exists before handing it to tinge; CI runners have none
+print -r -- '#!/bin/sh' > $tmp/tinge-bin/telnet; chmod +x $tmp/tinge-bin/telnet
 print -r -- 'Host core-sw
     #_Tags switch, ruijie
 Host web01' > $tmp/tinge-ssh

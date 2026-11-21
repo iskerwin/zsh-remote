@@ -2,6 +2,8 @@
 
 Your SSH, SFTP, Telnet and FTP hosts in fzf pickers, read from ssh-config-style files, with a live preview, a connection test and one-key open. Plus an ssh-agent key manager and network device config backups.
 
+![zsh-remote](img/zsh-remote.png)
+
 | Command | What it does |
 |---|---|
 | `ssh-pick [query]` | Pick a host from `~/.ssh/config` (and its `Include`s), connect with `ssh-ct` |
@@ -75,7 +77,7 @@ Devices are the hosts whose alias or `#_Tags` contain ruijie, cisco, huawei, h3c
 
 | Variable | Default |
 |---|---|
-| `REMOTE_SSH_CONFIG` | `~/.ssh/config` |
+| `REMOTE_SSH_CONFIG` | `~/.ssh/config` (where the SSH list is read; ssh itself still reads its usual config) |
 | `REMOTE_TELNET_CONFIG` | `~/.ssh/telnet_config` |
 | `REMOTE_FTP_CONFIG` | `~/.ssh/ftp_config` |
 | `REMOTE_CONNECT_TIMEOUT` | `3` seconds for `^T` |

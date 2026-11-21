@@ -326,6 +326,7 @@ assert 'install: apt package' 'sudo apt install netcat-openbsd' "$(inst apt nc)"
 # tinge gets the alias's #_Tags and chooses its rules itself
 mkdir -p $tmp/tinge-bin
 print -r -- '#!/bin/sh
+[ "$1" = --version ] && { echo "tinge 0.3.0"; exit 0; }
 echo "$*"' > $tmp/tinge-bin/tinge; chmod +x $tmp/tinge-bin/tinge
 print -r -- 'Host core-sw
     #_Tags switch, ruijie
@@ -334,6 +335,15 @@ tinge_run() { env -u ZSH_UI_DIR PATH=$tmp/tinge-bin:$PATH REMOTE_SSH_CONFIG=$tmp
 assert 'ssh-to: passes the alias tags to tinge' '--tags switch, ruijie ssh -p 2222 core-sw' "$(tinge_run ssh-to -p 2222 core-sw)"
 assert 'ssh-to: no tags for an untagged alias or an address' '--tags  ssh root@10.0.0.1' "$(tinge_run ssh-to root@10.0.0.1)"
 assert 'telnet-to: tinge chooses by the command' 'telnet 10.0.0.2 23' "$(tinge_run telnet-to 10.0.0.2 23)"
+# A tinge without --tags (before 0.3.0): warn once and connect without it
+mkdir -p $tmp/tinge-old; print -r -- '#!/bin/sh
+[ "$1" = --version ] && { echo "tinge 0.2.0"; exit 0; }
+echo "TINGE $*"' > $tmp/tinge-old/tinge; chmod +x $tmp/tinge-old/tinge
+print -r -- '#!/bin/sh
+echo "SSH $*"' > $tmp/tinge-old/ssh; chmod +x $tmp/tinge-old/ssh
+old=$(env -u ZSH_UI_DIR PATH=$tmp/tinge-old:$PATH REMOTE_SSH_CONFIG=$tmp/tinge-ssh $commands[zsh] -f -c 'compdef() { :; }; source $1/lib.zsh; for f in picker ssh; do source $1/$f.zsh; done; ssh-to web01; ssh-to web01' _ $here 2>&1)
+assert 'ssh-to: tinge before 0.3.0 falls back to ssh, warning once' '1 2 0' \
+    "$(print -r -- $old | command grep -c 'older than 0.3.0') $(print -r -- $old | command grep -c '^SSH web01') $(print -r -- $old | command grep -c TINGE)"
 assert 'install: full command anywhere' 'brew install iskerwin/tap/tinge' "$(inst apt tinge)"
 assert 'install: Linux-only tool without apt' 'install secret-tool with your package manager' "$(inst brew secret-tool)"
 assert '_rmt_need: error names the caller and the command' '✗ telnet-to needs telnet — sudo apt install telnet' \

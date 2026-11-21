@@ -25,7 +25,7 @@ zsh 5.8+ and OpenSSH. Everything else is optional, and a command that needs a mi
 | Tool | Used for | Without it |
 |---|---|---|
 | [fzf](https://github.com/junegunn/fzf) 0.58+ | the pickers | open hosts directly: `ssh-to <alias>`, `ftp-open <alias>`, … |
-| [tinge](https://github.com/iskerwin/tinge) | highlighting in `ssh-to` / `telnet-to` | plain ssh / telnet, with a one-time tip |
+| [tinge](https://github.com/iskerwin/tinge) 0.3+ | highlighting in `ssh-to` / `telnet-to` | plain ssh / telnet, with a one-time tip (or an upgrade warning for an older tinge) |
 | `lftp` | `sftp-open`, `ftp-open` | `sftp-open` uses sftp (one-time tip); `ftp-open` stops with the install command |
 | `mc` | two-pane browser (`^O`, `--tui`) | error with the install command |
 | `telnet` | `telnet-to`, Telnet devices in `net-backup` | error with the install command (macOS no longer ships it) |
@@ -85,7 +85,7 @@ Host core-sw
     #_Group site-a
 ```
 
-- `#_Desc`, `#_Tags`, `#_Group` show in the list and are searchable (`@site-a`, `#switch`).
+- `#_Desc`, `#_Tags`, `#_Group` show in the list and are searchable (`@site-a`, `#switch`). `ssh-to` also hands `#_Tags` to tinge (`--tags`), whose rule sets choose by them: tag devices `switch`, `router` or `firewall`.
 - In `~/.ssh/ftp_config`, `#_Proto ftps` means implicit TLS (port 990); without it, plain FTP that lftp upgrades to TLS when offered. No `User` means anonymous.
 - Telnet and FTP default to ports 23 and 21 when there is no `Port`.
 

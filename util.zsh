@@ -69,6 +69,21 @@ _rmt_alias_tags() {
 }
 
 # Whether tinge is installed for highlighting; if not, tip once and let the caller fall back
+# ssh-to passes --tags, which tinge has from 0.3.0; the version is read once per shell and tinge path
+typeset -g _rmt_tinge_ok=''
 _rmt_tinge() {
     (( $+commands[tinge] )) || { _rmt_tip tinge 'highlighting'; return 1; }
+    [[ $_rmt_tinge_ok == $commands[tinge] ]] && return 0
+    local -a out=( ${(f)"$(command tinge --version 2>/dev/null)"} )
+    local v=${out[1]#tinge }
+    autoload -Uz is-at-least
+    if [[ $v == dev ]] || { [[ $v == <->.<->.<-> ]] && is-at-least 0.3.0 $v; }; then
+        _rmt_tinge_ok=$commands[tinge]
+        return 0
+    fi
+    [[ -n ${_rmt_tipped[tinge-old]-} ]] || {
+        _rmt_tipped[tinge-old]=1
+        _ui_warn "tinge ${v:-?} is older than 0.3.0, connecting without highlighting — brew upgrade tinge"
+    }
+    return 1
 }

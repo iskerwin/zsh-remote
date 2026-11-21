@@ -1,0 +1,249 @@
+#!/usr/bin/env expect
+# Network device config backup: log in → recognize the vendor by its prompt → disable paging → export the config to stdout
+# Day to day, use net-backup (netbak.zsh: passwords in the keychain, file naming); this script only logs in and captures
+#
+#   prompt name> / name#  → Ruijie RGOS, Cisco IOS etc.: enable → terminal length 0 → show running-config
+#   prompt <name>         → Huawei VRP, H3C Comware: screen-length … → display current-configuration
+#                            without enough privilege, super (same password as enable) and retry
+#
+# Usage:
+#   NETBAK_PASS='login password' [NETBAK_ENABLE='enable password'] net-backup.exp <host or ssh alias> [user] > file
+#   NETBAK_PASS='login password' [NETBAK_ENABLE='enable password'] net-backup.exp -telnet <address> <port> [user] > file
+#   Without a user, SSH uses User from ~/.ssh/config; telnet sends the user only when the device asks.
+#   Without NETBAK_ENABLE, the enable / super password is the login password.
+
+set proto ssh
+if {[lindex $argv 0] eq "-telnet"} {
+    set proto telnet
+    set argv [lrange $argv 1 end]
+}
+if {[llength $argv] < ($proto eq "telnet" ? 2 : 1) || ![info exists env(NETBAK_PASS)]} {
+    puts stderr "usage: NETBAK_PASS='password' \[NETBAK_ENABLE='enable password'\] $argv0 <host or alias> \[user\] > file"
+    puts stderr "       NETBAK_PASS='password' \[NETBAK_ENABLE='enable password'\] $argv0 -telnet <address> <port> \[user\] > file"
+    exit 2
+}
+set pass $env(NETBAK_PASS)
+set enpass [expr {[info exists env(NETBAK_ENABLE)] ? $env(NETBAK_ENABLE) : $pass}]
+if {$proto eq "telnet"} {
+    lassign $argv host port user
+} else {
+    lassign $argv host user
+    set target [expr {$user eq "" ? $host : "$user@$host"}]
+}
+
+set timeout 30
+log_user 0
+
+proc die {msg} {
+    puts stderr "error: $msg"
+    exit 1
+}
+
+# Quote a prompt as a regex literal (host names may contain . - [ ] etc.)
+proc re_quote {s} {
+    regsub -all {[][{}()*+?.\\^$|]} $s {\\&} s
+    return $s
+}
+
+# Wait for the prompt; command errors in the output do not matter
+proc wait_prompt {re what} {
+    expect {
+        -re $re {}
+        timeout { die "timed out: $what" }
+        eof     { die "connection closed: $what" }
+    }
+}
+
+if {$proto eq "telnet"} {
+    spawn telnet $host $port
+} else {
+    # Devices cannot open a new session on a multiplexed connection, so disable ControlMaster
+    spawn ssh -o ControlMaster=no -o ControlPath=none $target
+}
+
+# ── Log in, get the prompt ──────────────────────
+# After a wrong password a telnet device asks for the user or password again; the second time means failure
+set tries 0
+set utries 0
+expect {
+    # Never accept an unknown host key automatically: the password would be sent next (man in the middle)
+    -re {yes/no.*\?} { die "the host key of $host is not confirmed yet: ssh to it once and check the fingerprint, then back up" }
+    -re {(?i)(user ?name|login):\s*$} {
+        if {$proto ne "telnet"} { exp_continue }
+        if {[incr utries] > 1} { die "login failed (wrong user or password)" }
+        if {$user eq ""} { die "the device asks for a user: set User in ~/.ssh/telnet_config" }
+        send "$user\r"
+        set tries 0
+        exp_continue
+    }
+    -re {[Pp]assword:\s*$} {
+        if {[incr tries] > 1} { die "wrong login password" }
+        send "$pass\r"
+        exp_continue
+    }
+    -re {\[Y/N\]:?\s*$} { send "N\r"; exp_continue }
+    -re {(?:^|\n)([^\r\n]*[>#\]])\s*$} { set prompt [string trim $expect_out(1,string)] }
+    "Permission denied" { die "login denied (usually a wrong password or an empty NETBAK_PASS)" }
+    -re {Unable to connect[^\n]*} { die "telnet connection failed: $expect_out(0,string)" }
+    timeout { die "login timed out" }
+    eof     { die "connection closed" }
+}
+
+# ── Recognize the vendor by its prompt ──────────────────────
+if {[regexp {^<.+>$} $prompt]} {
+    # Huawei / H3C user view <name>
+    set style vrp
+    set pre "\n[re_quote $prompt]\\s*$"
+} elseif {[regexp {^(.+?)([>#])$} $prompt -> name mode]} {
+    # Ruijie / Cisco: name> user mode, name# privileged mode
+    set style ios
+    set pre "\n[re_quote $name]#\\s*$"
+    if {$mode eq ">"} {
+        send "enable\r"
+        set tries 0
+        expect {
+            -re {[Pp]assword:\s*$} {
+                if {[incr tries] > 1} { die "wrong enable password" }
+                send "$enpass\r"
+                exp_continue
+            }
+            -re $pre {}
+            -re "\n[re_quote $name]>\\s*$" { die "enable failed (wrong password or not allowed)" }
+            timeout { die "enable timed out" }
+            eof     { die "connection closed during enable" }
+        }
+    }
+} else {
+    die "unrecognized prompt: $prompt"
+}
+
+# ── Disable paging and export the config ──────────────────────
+if {$style eq "ios"} {
+    send "terminal length 0\r"
+    wait_prompt $pre "disabling paging"
+    set show "show running-config"
+} else {
+    # Huawei uses the first, H3C the second; the unsupported one just errors, harmlessly
+    send "screen-length 0 temporary-display\r"
+    wait_prompt $pre "disabling paging"
+    send "screen-length disable\r"
+    wait_prompt $pre "disabling paging"
+    set show "display current-configuration"
+}
+
+# Run a command and collect all output up to the next prompt
+# Take everything as it arrives and look for the pager and prompt in our own tail, not in expect's buffer:
+# how much full_buffer takes when the buffer fills differs between expect versions (macOS's takes it all),
+# so a prompt arriving exactly then would be taken along and we would wait until the timeout.
+proc grab {cmd} {
+    global pre
+    set out ""
+    set tail ""
+    send "$cmd\r"
+    expect {
+        -re {.+} {
+            append out $expect_out(buffer)
+            append tail $expect_out(buffer)
+            if {[regexp -indices -- {-+ ?More ?-+} $tail more]} {
+                # Keep only what follows the pager prompt, so one prompt never pages twice
+                set tail [string range $tail [expr {[lindex $more 1] + 1}] end]
+                send " "
+                exp_continue
+            }
+            if {![regexp -- $pre $tail]} {
+                # Keep a full line: the pager prompt and the prompt may arrive in pieces
+                set tail [string range $tail end-511 end]
+                exp_continue
+            }
+        }
+        timeout { die "reading the config timed out" }
+        eof     { die "connection closed while reading the config" }
+    }
+    return $out
+}
+
+# A command error in the first lines of output means too little privilege for this command
+proc denied {out} {
+    set head [join [lrange [split $out "\n"] 0 4] "\n"]
+    return [regexp -line {^\s*(Error:|% )} $head]
+}
+
+set timeout 120
+set out [grab $show]
+
+# Huawei / H3C low-privilege account: super (same password as enable) and retry
+if {$style eq "vrp" && [denied $out]} {
+    set timeout 30
+    send "super\r"
+    set tries 0
+    expect {
+        -re {[Pp]assword:\s*$} {
+            if {[incr tries] > 1} { die "wrong super password" }
+            send "$enpass\r"
+            exp_continue
+        }
+        -re $pre {}
+        timeout { die "super timed out" }
+        eof     { die "connection closed during super" }
+    }
+    if {[regexp {Error|[Ff]ail|[Dd]enied|[Ii]nvalid} $expect_out(buffer)]} {
+        die "super failed (wrong password or the account may not raise its level)"
+    }
+    send "screen-length 0 temporary-display\r"
+    wait_prompt $pre "disabling paging"
+    set timeout 120
+    set out [grab $show]
+}
+if {[denied $out]} {
+    die "not enough privilege to run $show"
+}
+
+# The config is in; if the device keeps the connection after quit, wait at most 10 seconds (the result stands)
+send [expr {$style eq "ios" ? "exit\r" : "quit\r"}]
+set timeout 10
+expect eof
+
+# ── Clean up the output ──────────────────────
+# Devices erase the pager prompt in different ways: backspaces (Ruijie / Cisco), cursor left ESC[nD (Huawei / H3C),
+# carriage return \r. Replay those control characters per line like a terminal to get what the screen shows;
+# just deleting characters would also delete the erasing spaces and the next line's indentation.
+proc render {line} {
+    set buf {}
+    set col 0
+    while {$line ne ""} {
+        if {[regexp {^\x1b\[([0-9;]*)([A-Za-z])} $line m num cmd]} {
+            set line [string range $line [string length $m] end]
+            if {![string is integer -strict $num]} { set num 1 }
+            switch -- $cmd {
+                D { set col [expr {max(0, $col - $num)}] }
+                C { incr col $num }
+                K { set buf [lrange $buf 0 [expr {$col - 1}]] }
+            }
+            continue
+        }
+        set ch [string index $line 0]
+        set line [string range $line 1 end]
+        switch -- $ch {
+            "\b"   { if {$col > 0} { incr col -1 } }
+            "\r"   { set col 0 }
+            default {
+                while {[llength $buf] < $col} { lappend buf " " }
+                if {$col < [llength $buf]} { lset buf $col $ch } else { lappend buf $ch }
+                incr col
+            }
+        }
+    }
+    return [string trimright [join $buf ""]]
+}
+
+# Drop trailing \r and replay each line; delete pager prompts that were not erased; drop the echoed command and the final prompt
+regsub -all {\r+\n} $out "\n" out
+set lines {}
+foreach l [lrange [split $out "\n"] 1 end-1] {
+    # Replay only lines with control characters; keep the rest as is (trailing spaces too, so backups stay byte-comparable)
+    if {[regexp {[\b\r\x1b]} $l]} { set l [render $l] }
+    # Ruijie / Cisco show " --More-- " (with a trailing space), Huawei / H3C "  ---- More ----"
+    regsub {^ *(?:--More-- |-+ More -+)} $l "" l
+    lappend lines $l
+}
+puts [string trimright [join $lines "\n"]]

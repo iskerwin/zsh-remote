@@ -1,0 +1,464 @@
+#!/usr/bin/env zsh
+# ══════════════════════════════════════════════
+# helper — the commands fzf runs for picker.zsh and agent.zsh
+# (list generation, previews, keybinding actions).
+#
+# A real file instead of heredoc-generated scripts: no temp dirs to clean up,
+# and no stale cached copy after the plugin is edited.
+#
+#   hosts <kind>               host list of a picker, kind ssh|sftp|telnet|ftp
+#                              (tab-separated, for fzf; tree layout, flat while
+#                              $FZF_QUERY is set)
+#   host  <kind> <alias> <desc> <tags> [group] host preview (local info only, no network)
+#   probe <kind> <alias>       test reachability and auth (connects once;
+#                              telnet / FTP: TCP port check and banner)
+#   host-addkey <alias>        add an SSH host's identity files to the agent
+#   edit-config <kind>         edit the kind's config file (through chezmoi if managed)
+#   keys                       local + agent key list (tab-separated, for fzf)
+#   key   <fp> <file>          key preview
+#   toggle <fp> <file>         add the key to / remove it from the agent
+#   status                     agent status and loaded keys
+# ══════════════════════════════════════════════
+
+source "${0:A:h}/lib.zsh"
+
+_self=${(q)${0:A}}
+
+_pause() { _ui_palette; read -sk1 "?${_ui[gry]}Press any key to continue…${_ui[r]}"; }
+
+# ══════════════════════════════════════════════
+# Hosts
+# ══════════════════════════════════════════════
+
+# Shown target of a resolved host (_rmt_g) -> REPLY: user@host[:port] for
+# ssh, <scheme>://user@host[:port] for the others; the port only when it
+# differs from the protocol's default. $1 kind, $2 the host's protocol.
+_rmt_host_url() {
+    local scheme=$2
+    [[ $1 == sftp ]] && scheme=sftp
+    _rmt_default_port $2
+    REPLY=$(_rmt_target "$_rmt_g[user]" "$_rmt_g[hostname]" "$_rmt_g[port]" $REPLY)
+    [[ $scheme == ssh ]] || REPLY="$scheme://$REPLY"
+}
+
+# Fields: alias \t desc \t tags \t display \t group \t layout (only display
+# is shown via --with-nth). Hosts with a #_Group come first, sorted by group
+# then alias; ungrouped hosts follow in config order.
+# Two layouts, picked by the fzf query (fzf exports $FZF_QUERY to reload):
+#   t (tree, empty query): a header row per group (empty alias, group in
+#     field 5; the picker skips it, ignores Enter on it and leaves it out of
+#     the host count), hosts indented under it with ├ └ guides
+#   f (flat, while searching): no headers, a leading @group column so
+#     @group searches match and results keep their group
+# Display: [@group]  icon  alias  target  #tags  desc — (m) pads by
+# display width, so CJK groups/descriptions/tags stay aligned. No group
+# anywhere: no headers, guides or column.
+cmd_hosts() {
+    local kind=${1:-ssh} layout=t
+    [[ -n $FZF_QUERY ]] && layout=f
+    _rmt_kind_file $kind
+    local file=$REPLY name desc tags proto group target
+    local -a rows=()
+    _rmt_host_entries $file | while IFS=$'\x1f' read -r name desc tags proto group; do
+        _rmt_resolve "$name" $proto || continue
+        _rmt_host_url $kind $proto; target=$REPLY
+        _rmt_host_icon "$name $_rmt_g[hostname] $tags"
+        rows+=( "$name" "$desc" "$tags" "$REPLY" "$target" "$group" )
+    done
+
+    # Row order: grouped (sorted by group, alias), then ungrouped
+    local -i i n=6
+    local -a keys=() order=()
+    for (( i = 1; i <= $#rows; i += n )); do
+        if [[ -n ${rows[i+5]} ]]; then
+            keys+=( "${rows[i+5]}"$'\x1f'"${rows[i]}"$'\x1f'"$i" )
+        else
+            order+=( $i )
+        fi
+    done
+    order=( ${${(o)keys}##*$'\x1f'} $order )
+
+    # Size the group/alias/target/tags columns to the longest value (capped);
+    # padding is applied to the plain text, color wrapped around it after
+    local -i wp=0 wa=0 wt=0 wg=0
+    local -A chips=() count=() last=()
+    for i in $order; do
+        count[@${rows[i+5]}]=$(( ${count[@${rows[i+5]}]:-0} + 1 ))
+        last[@${rows[i+5]}]=$i
+        chips[$i]="${rows[i+2]:+#${(j: #:)${(s:,:)rows[i+2]// /}}}"
+        (( ${(m)#rows[i+5]} + 1 > wp )) && [[ -n ${rows[i+5]} ]] && wp=$(( ${(m)#rows[i+5]} + 1 ))
+        (( ${(m)#rows[i]} > wa )) && wa=${(m)#rows[i]}
+        (( ${(m)#rows[i+4]} > wt )) && wt=${(m)#rows[i+4]}
+        (( ${(m)#chips[$i]} > wg )) && wg=${(m)#chips[$i]}
+    done
+    (( wp > 20 )) && wp=20
+    (( wa > 32 )) && wa=32
+    (( wt > 36 )) && wt=36
+    (( wg > 30 )) && wg=30
+
+    local line prev=$'\0' g label
+    for i in $order; do
+        g=${rows[i+5]}
+        line=""
+        if (( ! wp )); then
+            :
+        elif [[ $layout == t ]]; then
+            if [[ $g != $prev ]]; then
+                prev=$g
+                label="${g:-ungrouped}"
+                print -r -- $'\t\t\t'"${_ui[mag]}${_ui[b]}${label}${_ui[r]} ${_ui[gry]}$count[@$g]${_ui[r]}"$'\t'"$g"$'\t'"$layout"
+            fi
+            if [[ $last[@$g] == $i ]]; then line+="${_ui[gry]}└─${_ui[r]} "; else line+="${_ui[gry]}├─${_ui[r]} "; fi
+        else
+            line+="${_ui[mag]}${(mr:wp:)${g:+@$g}}${_ui[r]}  "
+        fi
+        line+="${rows[i+3]}  ${_ui[fg]}${(mr:wa:)rows[i]}${_ui[r]}  ${_ui[gry]}${(mr:wt:)rows[i+4]}${_ui[r]}"
+        (( wg )) && line+="  ${_ui[blu]}${(mr:wg:)chips[$i]}${_ui[r]}"
+        [[ -n ${rows[i+1]} ]] && line+="  ${_ui[gry]}${_ui[it]}${rows[i+1]}${_ui[r]}"
+        print -r -- "${rows[i]}"$'\t'"${rows[i+1]}"$'\t'"${rows[i+2]}"$'\t'"$line"$'\t'"${rows[i+5]}"$'\t'"$layout"
+    done
+}
+
+# Separator row preview: the hosts of a group in the kind's file
+cmd_group() {
+    local kind=$1 name desc tags proto group
+    local -a rows=()
+    _rmt_kind_file $kind
+    _rmt_host_entries $REPLY | while IFS=$'\x1f' read -r name desc tags proto group; do
+        [[ $group == $2 ]] && rows+=( "$name" "$desc" )
+    done
+    _ui_head "@$2" "$(( $#rows / 2 )) hosts"
+    local -i i
+    for (( i = 1; i <= $#rows; i += 2 )); do
+        _rmt_host_icon "${rows[i]} ${rows[i+1]}"
+        print -r -- "  $REPLY  ${_ui[fg]}${rows[i]}${_ui[r]}"
+        [[ -n ${rows[i+1]} ]] && print -r -- "     ${_ui[gry]}${_ui[it]}${rows[i+1]}${_ui[r]}"
+    done
+}
+
+# Card header: name, target, group, tags, description
+_host_header() {
+    local name=$1 desc=$2 tags=$3 group=$4
+    _ui_head "$name" "$5"
+    [[ -n $group ]] && print -r -- "  ${_ui[mag]}@$group${_ui[r]}"
+    [[ -n $tags ]] && print -r -- "  $(_rmt_tags "$tags")"
+    [[ -n $desc ]] && print -r -- "  ${_ui[it]}$desc${_ui[r]}"
+}
+
+cmd_host() {
+    local kind=$1 name=$2 desc=$3 tags=$4 group=$5 proto
+    [[ -n $name ]] || { [[ -n $group ]] && cmd_group $kind "$group"; return 0; }
+    _rmt_kind_file $kind
+    _rmt_proto "$name" $REPLY
+    proto=$REPLY
+    _rmt_resolve "$name" $proto || { _rmt_err "ssh -G $name failed — config parse error?"; return 1; }
+    _rmt_host_url $kind $proto
+    _host_header "$name" "$desc" "$tags" "$group" "$REPLY"
+
+    # Telnet / FTP hosts: connection details only (no auth methods or identity files)
+    if [[ $kind == (telnet|ftp) ]]; then
+        _ui_sect connection
+        _ui_kv proto $proto
+        _ui_kv host "$_rmt_g[hostname]"
+        if [[ $kind == telnet ]]; then
+            _ui_kv user "${_rmt_g[user]:-${_ui[gry]}(not set)${_ui[r]}}"
+        else
+            _ui_kv user "${_rmt_g[user]:-${_ui[gry]}anonymous${_ui[r]}}"
+        fi
+        _ui_kv port "$_rmt_g[port]"
+        _rmt_cfg_file $kind
+        _ui_kv file "${(D)REPLY}"
+        if [[ $kind == telnet ]]; then
+            _rmt_warn "Telnet is unencrypted — passwords cross the network in clear text"
+            return 0
+        fi
+        if [[ -z $_rmt_g[user] ]]; then
+            :
+        elif _rmt_secret_has ftp-open "$name"; then
+            _ui_kv password "${_ui[grn]}in keychain${_ui[r]} ${_ui[gry]}· ftp-open --forget $name${_ui[r]}"
+        else
+            _ui_kv password "${_ui[gry]}asked on first connection${_ui[r]}"
+        fi
+        [[ $proto == ftp ]] && _ui_hint "Plain FTP: lftp switches to TLS when the server offers it, otherwise passwords go in clear text"
+        return 0
+    fi
+
+    _ui_sect connection
+    _ui_kv host "$_rmt_g[hostname]"
+    _ui_kv user "$_rmt_g[user]"
+    _ui_kv port "$_rmt_g[port]"
+    [[ ${_rmt_g[proxyjump]:-none} != none ]] && _ui_kv jump "$_rmt_g[proxyjump]"
+    _ui_kv auth "${${_rmt_g[preferredauthentications]:-default}//,/ → }"
+    if [[ ${_rmt_g[controlpath]:-none} != none ]] && ssh -O check "$name" &>/dev/null; then
+        _ui_kv master "${_ui[grn]}● active${_ui[r]}"
+    fi
+
+    _ui_sect identity
+    local -a loaded=( ${(f)"$(_rmt_loaded_fps)"} )
+    local f found=0
+    for f in ${(f)_rmt_g[identityfile]}; do
+        f=${f/#\~/$HOME}
+        [[ -f $f ]] || continue
+        found=1
+        if ! _rmt_keyinfo "$f"; then
+            _rmt_warn "${(D)f} ${_ui[gry]}cannot read key${_ui[r]}"
+        elif (( ${loaded[(Ie)$reply[2]]} )); then
+            print -r -- "  ${_ui[grn]}●${_ui[r]} ${f:t}  ${_ui[gry]}$reply[4] · in agent${_ui[r]}"
+        else
+            print -r -- "  ${_ui[gry]}○${_ui[r]} ${f:t}  ${_ui[gry]}$reply[4] · not loaded ·${_ui[r]} ${_ui[blu]}^A${_ui[r]}"
+        fi
+        _rmt_perm_badge "$f" || print -r -- "    $REPLY"
+    done
+    (( found )) || _rmt_warn "No identity file found on disk"
+    [[ $_rmt_g[identitiesonly] == yes ]] || (( ! $#loaded )) ||
+        _ui_hint "IdentitiesOnly no: $#loaded agent key(s) may also be offered"
+}
+
+# One BatchMode connection with -v gives everything at once: server version,
+# auth result/method, remote OS and sudo — instead of nc + banner grab + three
+# separate ssh logins on every cursor move.
+cmd_probe() {
+    local kind=$1 name=$2 t=$REMOTE_CONNECT_TIMEOUT out log rc err
+    [[ -n $name ]] || return 0
+    if [[ $kind == (telnet|ftp) ]]; then
+        _rmt_proto "$name" $kind
+        cmd_probe_tcp "$name" $REPLY
+        return
+    fi
+    _ui_head probe "$name"
+    _ui_hint 'one BatchMode connection · never sends passwords'
+    print
+
+    err=$(mktemp) || return 1
+    # ConnectTimeout does not limit the remote command after auth, so add an overall limit
+    out=$(_rmt_timeout $(( t * 3 + 2 )) ssh -v -T -o BatchMode=yes -o ConnectTimeout=$t -o ControlPath=none -o AddKeysToAgent=no "$name" \
+        'uname -srm; sudo -n true 2>/dev/null && echo __SUDO_OK__' 2>"$err" </dev/null)
+    rc=$?
+    log=$(<"$err"); rm -f "$err"
+
+    if [[ $log =~ 'remote software version ([^[:space:]]+)' ]]; then
+        _rmt_ok "Reachable — server ${_ui[ylw]}${match[1][1,40]}${_ui[r]}"
+    elif (( rc == 142 )); then
+        _rmt_err "Timed out"; return
+    else
+        local -a msgs=( ${${(f)log}:#(debug*|OpenSSH_*|Pseudo-terminal*)} )
+        _rmt_err "${${msgs[-1]:-Connection failed (exit $rc)}#ssh: }"
+        # Clash/Surge-style TUN proxies answer every lookup with 198.18.0.0/15
+        [[ $log =~ 'Connecting to [^ ]+ \[(198\.1[89]\.[0-9.]+)\]' ]] &&
+            _ui_hint "  $match[1] is a proxy fake-IP — the host may not exist or be routed via proxy"
+        return
+    fi
+
+    if [[ $log =~ 'Authenticated to [^ ]+ .* using "([^"]+)"' ]]; then
+        _rmt_ok "Auth OK via $match[1]"
+        [[ $log =~ 'Server accepts key: ([^ ]+)' ]] && _ui_hint "  key ${(D)match[1]}"
+        local -a lines=( ${(f)out} )
+        local -a hello=( ${(M)${(f)log}:#*successfully authenticated*} )
+        [[ -n $hello[1] ]] && _rmt_info "$hello[1]"
+        [[ -n $lines[1] && $lines[1] != __SUDO_OK__ ]] && _rmt_info "Remote: ${_ui[ylw]}${lines[1][1,60]}${_ui[r]}"
+        (( ${lines[(Ie)__SUDO_OK__]} )) && _rmt_ok "Passwordless sudo"
+    elif [[ $log == *'Host key verification failed'* ]]; then
+        _rmt_err "Host key not trusted yet — connect once interactively"
+    else
+        _rmt_warn "Key auth not accepted"
+        local -a cont=( ${(M)${(f)log}:#*Authentications that can continue:*} )
+        [[ -n $cont[-1] ]] && _rmt_info "Server accepts: ${cont[-1]##*: }"
+    fi
+}
+
+# Telnet / FTP: TCP port check, then the first printable line the server
+# sends (a login prompt, or FTP's 220 greeting). Never sends anything.
+cmd_probe_tcp() {
+    local name=$1 proto=$2 t=$REMOTE_CONNECT_TIMEOUT out banner
+    _rmt_resolve "$name" $proto || { _rmt_err "ssh -G $name failed — config parse error?"; return 1; }
+    local host=$_rmt_g[hostname] port=$_rmt_g[port]
+    _ui_head probe "$name"
+    _ui_hint "$proto · TCP port check · never sends passwords"
+    print
+
+    if ! out=$(nc -zv -G $t "$host" "$port" 2>&1); then
+        _rmt_err "${${${(f)out}[-1]##*: }:-Port $port closed or unreachable}"
+        return
+    fi
+    _rmt_ok "Reachable — $proto ${_ui[ylw]}$host:$port${_ui[r]} open"
+    [[ $out =~ '\[(198\.1[89]\.[0-9.]+)\]' ]] &&
+        _ui_hint "  $match[1] is a proxy fake-IP — open only means the proxy accepted the connection"
+    # Telnet option negotiation bytes are non-printable and get stripped
+    banner=$( { sleep 2 } | _rmt_timeout $(( t + 3 )) nc -G $t -w $t "$host" "$port" 2>/dev/null | LC_ALL=C tr -cd '[:print:]\n' | grep -m1 '[^[:space:]]')
+    [[ -n $banner ]] && _rmt_info "Banner: ${_ui[ylw]}${banner[1,60]}${_ui[r]}"
+}
+
+cmd_host_addkey() {
+    [[ -n $1 ]] || return 0
+    local -a loaded=( ${(f)"$(_rmt_loaded_fps)"} ) keys=( ${(f)"$(_rmt_host_keys "$1")"} )
+    if (( ! $#keys )); then
+        _ui_err "No identity file on disk for $1"; _pause; return 1
+    fi
+    local f
+    for f in $keys; do
+        _rmt_keyinfo "$f" && (( ${loaded[(Ie)$reply[2]]} )) && continue
+        _rmt_add_key "$f" || { _pause; return 1; }
+    done
+}
+
+# The configs are managed by chezmoi here; editing the target directly would
+# be overwritten on the next apply, so go through `chezmoi edit` when possible.
+cmd_edit_config() {
+    _rmt_cfg_file "${1:-ssh}"
+    if (( $+commands[chezmoi] )) && chezmoi source-path "$REPLY" &>/dev/null; then
+        chezmoi edit --apply "$REPLY"
+    else
+        ${=EDITOR:-vi} "$REPLY"
+    fi
+}
+
+# ══════════════════════════════════════════════
+# Keys
+# ══════════════════════════════════════════════
+
+# Fields: fp \t file \t display (file is empty for agent-only keys)
+cmd_keys() {
+    local -a loaded=( ${(f)"$(_rmt_loaded_fps)"} ) seen=() rows=()
+    local f line
+    for f in ${(f)"$(_rmt_find_keys)"}; do
+        _rmt_keyinfo "$f" || continue
+        seen+=( $reply[2] )
+        rows+=( "$reply[2]" "$f" "${f#$SSH_KEY_DIR/}" "$reply[4]" "$reply[3]" ${loaded[(Ie)$reply[2]]} )
+    done
+    # Keys the agent holds without a local file (hardware tokens, deleted files…)
+    for line in ${(f)"$(ssh-add -l 2>/dev/null)"}; do
+        _rmt_parse_l "$line" && [[ $reply[2] == *:* ]] || continue
+        (( ${seen[(Ie)$reply[2]]} )) && continue
+        rows+=( "$reply[2]" "" "(agent only)" "$reply[4]" "$reply[3]" 1 )
+    done
+
+    local -i i wn=0
+    for (( i = 1; i <= $#rows; i += 6 )); do
+        (( ${(m)#rows[i+2]} > wn )) && wn=${(m)#rows[i+2]}
+    done
+
+    local mark name
+    for (( i = 1; i <= $#rows; i += 6 )); do
+        if (( rows[i+5] )); then mark="${_ui[grn]}●"; else mark="${_ui[gry]}○"; fi
+        name="${_ui[fg]}${(mr:wn:)rows[i+2]}"
+        [[ -z ${rows[i+1]} ]] && name="${_ui[ylw]}${(mr:wn:)rows[i+2]}"
+        print -r -- "${rows[i]}"$'\t'"${rows[i+1]}"$'\t'"$mark $name  ${_ui[cyn]}${(mr:7:)rows[i+3]}${_ui[r]}  ${_ui[gry]}${rows[i+4]}${_ui[r]}"
+    done
+}
+
+cmd_key() {
+    local fp=$1 kf=$2 line
+    [[ -n $fp ]] || return 0
+    local -a loaded=( ${(f)"$(_rmt_loaded_fps)"} )
+    local in_agent=${loaded[(Ie)$fp]}
+
+    if [[ -n $kf ]]; then
+        _rmt_keyinfo "$kf"
+    else
+        for line in ${(f)"$(ssh-add -l 2>/dev/null)"}; do
+            [[ $line == *" $fp "* ]] && _rmt_parse_l "$line" && break
+        done
+    fi
+    local -a info=( "$reply[@]" )
+    _ui_head "${${kf#$SSH_KEY_DIR/}:-agent-only key}" "$info[4] · $info[1] bits"
+    if (( in_agent )); then
+        print -r -- "  ${_ui[grn]}● in agent${_ui[r]}  ${_ui[gry]}Enter removes${_ui[r]}"
+    else
+        print -r -- "  ${_ui[gry]}○ not loaded  Enter adds${_ui[r]}"
+    fi
+
+    _ui_sect details
+    _ui_kv comment "${info[3]:--}"
+    _ui_kv sha256  "${fp#SHA256:}"
+    if [[ -n $kf ]]; then
+        _ui_kv file     "${(D)kf}"
+        _ui_kv modified "$(_rmt_mtime "$kf")"
+        _rmt_perm_badge "$kf"; _ui_kv perms "$REPLY"
+    else
+        _rmt_warn "No local file (hardware key, forwarded or deleted)"
+    fi
+
+    if [[ -n $kf ]]; then
+        local name desc tags proto group
+        local -a hk
+        _ui_sect "used by"
+        local -i n=0
+        _rmt_host_entries ssh | while IFS=$'\x1f' read -r name desc tags proto group; do
+            hk=( ${(f)"$(_rmt_host_keys "$name")"} )
+            (( ${hk[(Ie)$kf]} )) || continue
+            _rmt_host_icon "$name $_rmt_g[hostname] $tags"
+            print -r -- "  $REPLY  $name"
+            (( n++ ))
+        done
+        (( n )) || _ui_hint "No host in ssh config uses this key"
+    fi
+
+    local pub=""
+    [[ -n $kf && -f $kf.pub ]] && pub=$(<"$kf.pub")
+    [[ -z $pub ]] && (( in_agent )) && pub=$(_rmt_agent_pubkey "$fp")
+    if [[ -n $pub ]]; then
+        _ui_sect "public key"
+        print -r -- "  ${_ui[gry]}$pub${_ui[r]}"
+    fi
+}
+
+cmd_toggle() {
+    local fp=$1 kf=$2
+    local -a loaded=( ${(f)"$(_rmt_loaded_fps)"} )
+    if (( ${loaded[(Ie)$fp]} )); then
+        _rmt_remove_key "$fp" || _pause
+    elif [[ -n $kf ]]; then
+        _rmt_add_key "$kf" || _pause
+    fi
+}
+
+cmd_status() {
+    _rmt_agent_status
+    local -i st=$?
+    local sub=${(D)SSH_AUTH_SOCK:-SSH_AUTH_SOCK unset}
+    [[ $SSH_AUTH_SOCK == *com.apple.launchd* ]] && sub="launchd · Keychain"
+    _ui_head ssh-agent "$sub"
+    case $st in
+        0) _ui_kv state '● running' grn ;;
+        1) _ui_kv state '● running' grn; _ui_kv keys 'none loaded'; return 0 ;;
+        *) _ui_kv state '● not reachable' red; return 1 ;;
+    esac
+
+    local -A files
+    local f line
+    for f in ${(f)"$(_rmt_find_keys)"}; do
+        _rmt_keyinfo "$f" && files[$reply[2]]=$f
+    done
+
+    local -a lines=( ${(f)"$(ssh-add -l 2>/dev/null)"} )
+    _ui_sect keys "${#lines} loaded"
+    for line in $lines; do
+        _rmt_parse_l "$line" || continue
+        print -r -- "  ${_ui[grn]}●${_ui[r]} ${${files[$reply[2]]#$SSH_KEY_DIR/}:-${_ui[ylw]}(agent only)${_ui[r]}}  ${_ui[cyn]}$reply[4]${_ui[r]}  ${_ui[gry]}$reply[3]${_ui[r]}"
+        _ui_hint "  $reply[2]"
+    done
+}
+
+# ══════════════════════════════════════════════
+# Dispatch
+# ══════════════════════════════════════════════
+cmd=${1:-}; (( $# )) && shift
+# Lists and previews go to fzf (not a tty) but should still be colored;
+# preview cards size their header rule to the preview pane
+if [[ $cmd == (hosts|host|probe|keys|key) ]]; then
+    export UI_COLOR=always
+    COLUMNS=${FZF_PREVIEW_COLUMNS:-$COLUMNS}
+fi
+_ui_palette
+case $cmd in
+    hosts)        cmd_hosts "$@" ;;
+    host)         cmd_host "$@" ;;
+    probe)        cmd_probe "$@" ;;
+    host-addkey)  cmd_host_addkey "$@" ;;
+    edit-config)  cmd_edit_config "$@" ;;
+    keys)         cmd_keys ;;
+    key)          cmd_key "$@" ;;
+    toggle)       cmd_toggle "$@" ;;
+    status)       cmd_status ;;
+    *)            _ui_usage ${0:t} 'hosts|host|probe|host-addkey|edit-config|keys|key|toggle|status'; exit 2 ;;
+esac

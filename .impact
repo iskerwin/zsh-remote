@@ -11,3 +11,7 @@ lib.zsh -> ~/Developer/tinge/internal/rules/network.yml | _rmt_device_pat 的设
 net-backup.exp -> README.md#net-backup
 .github/workflows/* -> README.md#Development
 README.md -> AGENTS.md | 测试、发布方法两边一致
+
+# README 中英文两版内容要一致
+README.md -> README.zh-CN.md | 英文版改了，中文版同步
+README.zh-CN.md -> README.md | 中文版改了，英文版同步

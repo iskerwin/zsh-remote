@@ -1,5 +1,7 @@
 # zsh-remote
 
+English | [简体中文](README.zh-CN.md)
+
 Your SSH, SFTP, Telnet and FTP hosts in fzf pickers, read from ssh-config-style files, with a live preview, a connection test and one-key open. Plus an ssh-agent key manager and network device config backups.
 
 ![zsh-remote](img/zsh-remote.png)

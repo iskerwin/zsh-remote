@@ -37,7 +37,7 @@ zsh 5.8+ and OpenSSH. Everything else is optional, and a command that needs a mi
 
 Run `remote-doctor` to see which are installed and how to get the rest. Set `REMOTE_TIPS=0` to hide the one-time tips. A [Nerd Font](https://www.nerdfonts.com/) shows the host icons.
 
-Install [zsh-ui](https://github.com/iskerwin/zsh-ui) for the same btop-style look as your other tools; without it zsh-remote uses a plain built-in look.
+Install [zsh-ui](https://github.com/iskerwin/zsh-ui) for the same TUI-style look as your other tools; without it zsh-remote uses a plain built-in look.
 
 ## Install
 

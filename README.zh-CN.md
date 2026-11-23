@@ -37,7 +37,7 @@ zsh 5.8+ 和 OpenSSH。其余都是可选的；需要某个缺失工具的命令
 
 运行 `remote-doctor` 查看哪些已安装、其余怎么装。设置 `REMOTE_TIPS=0` 隐藏一次性提示。装了 [Nerd Font](https://www.nerdfonts.com/) 才能显示主机图标。
 
-安装 [zsh-ui](https://github.com/iskerwin/zsh-ui)，就能和你的其他工具一样使用 btop 风格；没有它时 zsh-remote 使用朴素的内置样式。
+安装 [zsh-ui](https://github.com/iskerwin/zsh-ui)，就能和你的其他工具一样使用 TUI 风格；没有它时 zsh-remote 使用朴素的内置样式。
 
 ## 安装
 

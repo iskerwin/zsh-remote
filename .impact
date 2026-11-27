@@ -7,7 +7,7 @@ lib.zsh -> tests-lib.zsh
 picker.zsh -> README.md#Host files | 选择器和 \<Tab> 补全
 util.zsh -> README.md#Requirements | tinge 最低版本
 lib.zsh -> README.md#Configuration | REMOTE_* 变量
-lib.zsh -> ~/Developer/tinge/internal/rules/network.yml | _rmt_device_pat 的设备词和 match 一致
+lib.zsh -> ~/Developer/tinge/rules/network.yml | _rmt_device_pat 的设备词和 match 一致
 net-backup.exp -> README.md#net-backup
 .github/workflows/* -> README.md#Development
 README.md -> AGENTS.md | 测试、发布方法两边一致

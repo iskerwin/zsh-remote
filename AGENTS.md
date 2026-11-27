@@ -8,7 +8,7 @@ zsh-remote 是 zsh 插件（远端 `iskerwin/zsh-remote`）：ssh / sftp / telne
 
 - 文件分工写在 `zsh-remote.plugin.zsh` 开头：每种协议一个 `<kind>.zsh`，共用 `lib.zsh`（解析配置、钥匙串、外观）、`picker.zsh`（fzf 选择器和 `\<Tab>` 补全）、`util.zsh`（帮助、tinge 检查）。新协议 MUST 按那里写的步骤加。
 - 界面和帮助 MUST 用英文；每个命令 MUST 响应 `-h` / `--help`，并 MUST 自己注册补全（含 `-h`）。
-- 插件 MUST NOT 调用 dotfiles 里的函数；外观用 zsh-ui 的 `_ui_*`，`ui-fallback.zsh` 是 zsh-ui 的原样副本，MUST NOT 在这里改，zsh-ui 发版后 MUST 整份覆盖。
+- 插件 MUST NOT 调用 dotfiles 里的函数；外观用 zsh-ui 的 `_ui_*`，`ui-fallback.zsh` 是 zsh-ui 的原样副本，MUST NOT 在这里改，zsh-ui 发版后 MUST 整份覆盖（CI 的 `ui-fallback` 任务会和 zsh-ui 最新 tag 比对）。
 - fzf 最低 0.58，更新的选项 MUST 用 `_ui_fzf_since` 按版本加。
 - 加载顺序不同也 MUST 能用：fzf 自带的 `_fzf_complete_ssh` / `_telnet` 由 `_rmt_fzf_claim` 在第一次显示提示符前收回；以后再有同名冲突，MUST 用同样的方式处理，MUST NOT 要求用户调整加载顺序。
 

@@ -120,6 +120,8 @@ zsh -f tests.zsh && zsh -f tests-lib.zsh
 
 测试使用假的 `ssh`、`lftp`、`fzf` 和钥匙串命令，并让真实的 Expect 脚本对接一台假设备；不会访问网络，也不碰真实凭据。
 
+CI 还会检查 `ui-fallback.zsh` 与 [zsh-ui](https://github.com/iskerwin/zsh-ui) 最新版本的同名文件完全一致。
+
 ## 许可证
 
 [MIT](LICENSE)

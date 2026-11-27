@@ -7,8 +7,17 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y zsh expect
       - run: zsh -f tests.zsh
       - run: zsh -f tests-lib.zsh
+  ui-fallback:
+    # ui-fallback.zsh MUST be an unchanged copy of the latest zsh-ui release's ui-fallback.zsh.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: ui-fallback.zsh matches zsh-ui
+        run: |
+          tag=$(git ls-remote --tags --refs --sort=-v:refname https://github.com/iskerwin/zsh-ui 'v*' | head -1 | sed 's|.*refs/tags/||')
+          curl -fsSL "https://raw.githubusercontent.com/iskerwin/zsh-ui/$tag/ui-fallback.zsh" | diff -u - ui-fallback.zsh

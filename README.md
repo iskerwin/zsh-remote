@@ -120,6 +120,8 @@ zsh -f tests.zsh && zsh -f tests-lib.zsh
 
 The tests use fake `ssh`, `lftp`, `fzf` and keychain commands, and drive the real Expect script against a fake device; nothing touches the network or real credentials.
 
+CI also checks that `ui-fallback.zsh` is an unchanged copy of the latest [zsh-ui](https://github.com/iskerwin/zsh-ui) release.
+
 ## License
 
 [MIT](LICENSE)

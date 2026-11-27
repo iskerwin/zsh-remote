@@ -1,6 +1,6 @@
 # AGENTS.md
 
-zsh-remote 是 zsh 插件（远端 `iskerwin/zsh-remote`）：ssh / sftp / telnet / ftp 主机选择器、`ssh-ag`、`net-backup`。dotfiles 经 zap 加载它，并把提交锁在 `plugins.lock` 里。README.md 是给人看的说明，本文件写给 agent：改动前 MUST 先读。
+zsh-remote 是 zsh 插件（远端 `iskerwin/zsh-remote`）：ssh / sftp / telnet / ftp 主机选择器、`ssh-ag`、`net-backup`。dotfiles 在 `.chezmoiexternal.toml` 里把它锁定到一个提交，由 `.zshrc` 的 `plug` 加载。README.md 是给人看的说明，本文件写给 agent：改动前 MUST 先读。
 
 本文的 MUST、MUST NOT、SHOULD、SHOULD NOT、MAY 按 RFC 2119 / RFC 8174 解释，仅在全大写时有此含义。
 
@@ -34,7 +34,7 @@ zsh-remote 是 zsh 插件（远端 `iskerwin/zsh-remote`）：ssh / sftp / telne
 
 1. 提交推送到 `main`，打 tag：`git tag -a vX.Y.Z -m "zsh-remote X.Y.Z" && git push origin vX.Y.Z`。改名、删除命令或提高依赖版本升第二位，其余升第三位。
 2. 算 sha256 MUST 走代理：`zsh -ic 'net-with-proxy curl -sL https://github.com/iskerwin/zsh-remote/archive/refs/tags/vX.Y.Z.tar.gz' </dev/null | shasum -a 256`，再改 `~/Developer/homebrew-tap/Formula/zsh-remote.rb` 的 `url`、`sha256`（caveats 里的工具列表变了也改），`brew style` 后提交推送。
-3. 更新 dotfiles：按 dotfiles AGENTS.md「改动流程与检查」里「自有插件或 tinge 发版」一行做（改 `plugins.lock`、apply、`cz-plugins sync`、新 shell 验证、再提交）。
+3. 更新 dotfiles：按 dotfiles AGENTS.md「改动流程与检查」里「自有插件或 tinge 发版」一行做（改 `.chezmoiexternal.toml` 里的提交、`chezmoi apply`、新开 shell 验证、`cz-check`、再提交）。
 
 ## 提交
 
